@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 // Import views lazily
 const LoginView = () => import('../modules/auth/LoginView.vue');
+const MainLayout = () => import('../layouts/MainLayout.vue');
 const DashboardView = () => import('../modules/dashboard/DashboardView.vue');
 
 const routes = [
@@ -12,11 +13,17 @@ const routes = [
     },
     {
         path: '/',
-        name: 'Dashboard',
-        component: DashboardView,
-        meta: { requiresAuth: true }
+        component: MainLayout,
+        meta: { requiresAuth: true },
+        children: [
+            {
+                path: '',
+                name: 'Dashboard',
+                component: DashboardView
+            },
+            // Future routes will go here
+        ]
     },
-    // TODO: Add other module routes
     {
         path: '/:pathMatch(.*)*',
         redirect: '/'

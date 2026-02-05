@@ -1,71 +1,72 @@
 <script setup lang="ts">
-import { useAuthStore } from '../../stores/auth.store';
-import { storeToRefs } from 'pinia';
-
-const authStore = useAuthStore();
-const { user } = storeToRefs(authStore);
-
-const handleLogout = () => {
-    authStore.logout();
-};
+// Logic moved to layout
 </script>
 
 <template>
-    <div class="dashboard">
-        <header class="topbar">
-            <h2>Dashboard</h2>
-            <div class="user-info">
-                <span>Hola, {{ user?.username }}</span>
-                <button @click="handleLogout" class="logout-btn">Salir</button>
+    <div class="dashboard-overview">
+        <div class="welcome-card">
+            <h3>Bienvenido al ERP Madera</h3>
+            <p>Selecciona una opción del menú para comenzar.</p>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <span class="kpi-title">Requerimientos Activos</span>
+                <span class="kpi-value">3</span>
             </div>
-        </header>
-        
-        <main class="content">
-            <div class="welcome-card">
-                <h3>Bienvenido al ERP Madera</h3>
-                <p>Selecciona una opción del menú para comenzar.</p>
-                <!-- KPIs Placeholder -->
+            <div class="kpi-card">
+                <span class="kpi-title">Viajes en Tránsito</span>
+                <span class="kpi-value">1</span>
             </div>
-        </main>
+            <div class="kpi-card">
+                <span class="kpi-title">Stock Eucalipto</span>
+                <span class="kpi-value">150 m³</span>
+            </div>
+        </div>
     </div>
 </template>
 
 <style scoped>
-.dashboard {
-    min-height: 100vh;
-}
-
-.topbar {
-    background: white;
-    padding: 1rem 2rem;
+.dashboard-overview {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border);
-}
-
-.logout-btn {
-    margin-left: 1rem;
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: 1px solid var(--primary);
-    color: var(--primary);
-    border-radius: var(--radius-sm);
-}
-
-.logout-btn:hover {
-    background: var(--primary);
-    color: white;
-}
-
-.content {
-    padding: 2rem;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .welcome-card {
     background: white;
-    padding: 2rem;
+    padding: 1.5rem;
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+}
+
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.kpi-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.kpi-title {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.kpi-value {
+    color: var(--primary);
+    font-size: 2rem;
+    font-weight: 700;
 }
 </style>
