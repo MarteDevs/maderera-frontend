@@ -1,0 +1,36 @@
+:root {
+  --primary: #8B0000; /* Dark Red - Madera/Industrial vibe */
+  --primary-hover: #A52A2A;
+  --secondary: #2C3E50;
+  --accent: #E67E22;
+  --background: #F5F7FA;
+  --surface: #FFFFFF;
+  --text: #2C3E50;
+  --text-light: #95A5A6;
+  --border: #E2E8F0;
+  
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
