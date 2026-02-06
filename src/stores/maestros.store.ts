@@ -93,10 +93,14 @@ export const useMaestrosStore = defineStore('maestros', {
             this.productosLoading = true;
             this.error = null;
             try {
+                console.log('🔄 Store: Llamando a productosService.getAll...');
                 const response = await productosService.getAll(params);
+                console.log('📊 Store: Respuesta recibida:', response);
                 this.productos = response.data;
                 this.productosTotal = response.total;
+                console.log('✅ Store: Productos guardados:', this.productos.length);
             } catch (error: any) {
+                console.error('❌ Store: Error al cargar productos:', error);
                 this.error = error.response?.data?.message || 'Error al cargar productos';
                 throw error;
             } finally {

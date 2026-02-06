@@ -11,7 +11,7 @@ import AppHeader from '../components/layout/AppHeader.vue';
             <AppHeader />
             
             <main class="page-content">
-                <slot></slot>
+                <router-view />
             </main>
         </div>
     </div>

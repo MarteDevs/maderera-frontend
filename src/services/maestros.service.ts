@@ -17,6 +17,9 @@ import type {
 export const productosService = {
     async getAll(params?: QueryParams): Promise<PaginatedResponse<Producto>> {
         const response = await api.get('/products', { params });
+        console.log('📦 Respuesta completa de /products:', response);
+        console.log('📦 response.data:', response.data);
+        console.log('📦 response.data.data:', response.data.data);
         return response.data.data;
     },
 

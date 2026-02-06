@@ -6,6 +6,8 @@ import { DataTable, FormModal, ConfirmDialog } from '../../../components/ui';
 import type { Column } from '../../../components/ui/DataTable.vue';
 import type { Producto } from '../../../types/models';
 
+console.log('🚀 ProductosListView: Componente cargado');
+
 const maestrosStore = useMaestrosStore();
 
 // Estado
@@ -50,10 +52,21 @@ const modalTitle = computed(() => (isEditing.value ? 'Editar Producto' : 'Nuevo 
 
 // Métodos
 onMounted(async () => {
-    await Promise.all([
-        maestrosStore.fetchProductos(),
-        maestrosStore.fetchCatalogos(),
-    ]);
+    console.log('🔍 ProductosListView: onMounted iniciado');
+    try {
+        console.log('📡 Llamando a fetchProductos y fetchCatalogos...');
+        await Promise.all([
+            maestrosStore.fetchProductos(),
+            maestrosStore.fetchCatalogos(),
+        ]);
+        console.log('✅ Datos cargados:', {
+            productos: maestrosStore.productos.length,
+            medidas: maestrosStore.medidas.length,
+            clasificaciones: maestrosStore.clasificaciones.length
+        });
+    } catch (error) {
+        console.error('❌ Error al cargar datos:', error);
+    }
 });
 
 const openCreateModal = () => {
@@ -144,7 +157,7 @@ const handleSearch = (query: string) => {
 
             <!-- Columna de precio con formato -->
             <template #cell-precio_venta_base="{ value }">
-                S/. {{ value.toFixed(2) }}
+                S/. {{ Number(value || 0).toFixed(2) }}
             </template>
 
             <!-- Acciones -->
