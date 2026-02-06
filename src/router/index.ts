@@ -27,6 +27,16 @@ const routes = [
                 name: 'Maestros',
                 component: MaestrosView
             },
+            {
+                path: 'requirements',
+                name: 'Requerimientos',
+                component: () => import('../modules/requerimientos/RequerimientosListView.vue')
+            },
+            {
+                path: 'requirements/new',
+                name: 'NuevoRequerimiento',
+                component: () => import('../modules/requerimientos/RequerimientosForm.vue')
+            },
             // Future routes will go here
         ]
     },
