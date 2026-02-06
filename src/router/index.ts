@@ -37,6 +37,21 @@ const routes = [
                 name: 'NuevoRequerimiento',
                 component: () => import('../modules/requerimientos/RequerimientosForm.vue')
             },
+            {
+                path: 'viajes',
+                name: 'Viajes',
+                component: () => import('../modules/viajes/ViajesListView.vue')
+            },
+            {
+                path: 'viajes/new/:id_requerimiento',
+                name: 'NuevoViaje',
+                component: () => import('../modules/viajes/ViajesForm.vue')
+            },
+            {
+                path: 'inventory',
+                name: 'Inventario',
+                component: () => import('../modules/inventario/InventarioView.vue')
+            },
             // Future routes will go here
         ]
     },

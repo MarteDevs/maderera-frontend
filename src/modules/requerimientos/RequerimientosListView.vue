@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from './requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Search } from 'lucide-vue-next';
+import { Plus, Search, Truck } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -92,6 +92,14 @@ onMounted(() => {
                 </template>
 
                 <template #cell-actions="{ row }">
+                    <button 
+                        class="btn-icon" 
+                        title="Registrar Ingreso (Viaje)" 
+                        @click="router.push(`/viajes/new/${row.id_requerimiento}`)"
+                        v-if="row.estado !== 'ANULADO'"
+                    >
+                        <Truck class="icon-sm" />
+                    </button>
                     <button class="btn-icon" title="Ver Detalle" @click="router.push(`/requirements/${row.id_requerimiento}`)">
                         Ver
                     </button>

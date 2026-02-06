@@ -12,7 +12,16 @@ export const useRequerimientosStore = defineStore('requerimientos', () => {
         loading.value = true;
         error.value = null;
         try {
-            requerimientos.value = await requerimientosService.getAll();
+            const response = await requerimientosService.getAll();
+            // Handle paginated response structure { data: [], pagination: {} }
+            if (response && response.data && Array.isArray(response.data)) {
+                requerimientos.value = response.data;
+            } else if (Array.isArray(response)) {
+                requerimientos.value = response;
+            } else {
+                requerimientos.value = [];
+                console.warn('Unexpected response format in fetchRequerimientos', response);
+            }
         } catch (e: any) {
             console.error('Error fetching requerimientos:', e);
             error.value = e.response?.data?.message || 'Error al cargar requerimientos';
