@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 const LoginView = () => import('../modules/auth/LoginView.vue');
 const MainLayout = () => import('../layouts/MainLayout.vue');
 const DashboardView = () => import('../modules/dashboard/DashboardView.vue');
+const MaestrosView = () => import('../modules/maestros/MaestrosView.vue');
 
 const routes = [
     {
@@ -21,6 +22,11 @@ const routes = [
                 name: 'Dashboard',
                 component: DashboardView
             },
+            {
+                path: 'maestros',
+                name: 'Maestros',
+                component: MaestrosView
+            },
             // Future routes will go here
         ]
     },
@@ -35,7 +41,7 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     const isAuthenticated = !!localStorage.getItem('token');
 
     if (to.meta.requiresAuth && !isAuthenticated) {

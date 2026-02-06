@@ -14,7 +14,7 @@ const menuItems = [
     { label: 'Requerimientos', path: '/requirements', icon: FileText },
     { label: 'Viajes', path: '/trips', icon: Truck },
     { label: 'Inventario', path: '/inventory', icon: Package },
-    { label: 'Maestros', path: '/masters', icon: Database },
+    { label: 'Maestros', path: '/maestros', icon: Database },
 ];
 </script>
 
