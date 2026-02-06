@@ -30,17 +30,28 @@ export interface Requerimiento {
     proveedor?: { nombre: string };
     mina?: { nombre: string };
     supervisor?: { nombre: string };
+    // Campos aplanados
+    prov_nombre?: string;
+    mina_nombre?: string;
+    sup_nombre?: string;
     porcentaje_progreso?: number;
 }
 
 export const requerimientosService = {
     async getAll() {
         const response = await api.get('/requirements');
-        // Transformar datos para coincidir con la interfaz (singular vs plural)
-        if (response.data.data && Array.isArray(response.data.data.data)) {
-            response.data.data.data = response.data.data.data.map(mapRequerimientoFromBackend);
+        console.log('API Response:', response.data); // Debug
+
+        // Estructura esperada: { status: 'success', data: { data: [], pagination: {} } }
+        // response.data es el body. response.data.data es el objeto con paginación
+        const serverData = response.data?.data;
+
+        if (serverData && Array.isArray(serverData.data)) {
+            console.log('Mapping requirements...'); // Debug
+            serverData.data = serverData.data.map(mapRequerimientoFromBackend);
         }
-        return response.data.data;
+
+        return serverData;
     },
 
     async getById(id: number) {
@@ -70,10 +81,18 @@ export const requerimientosService = {
 };
 
 // Helper para mapear respuesta del backend (Prisma) a interfaz del Fronend
+// Helper para mapear respuesta del backend (Prisma) a interfaz del Fronend
 function mapRequerimientoFromBackend(req: any): any {
     if (!req) return null;
     return {
         ...req,
+        // Aplanar datos para la tabla
+        prov_nombre: req.proveedores?.nombre || '---',
+        mina_nombre: req.minas?.nombre || '---',
+        sup_nombre: req.supervisores?.nombre || '---',
+        estado: req.estado, // asegurar que pase el estado
+
+        // Estructuras anidadas para Modals/Forms
         proveedor: req.proveedores,
         mina: req.minas,
         supervisor: req.supervisores,
