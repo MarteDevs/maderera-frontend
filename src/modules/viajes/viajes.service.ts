@@ -65,6 +65,11 @@ function mapViajeFromBackend(v: any): any {
         requerimiento: v.requerimientos ? {
             ...v.requerimientos,
             proveedor: v.requerimientos.proveedores
-        } : undefined
+        } : undefined,
+        // Mapear detalles para incluir nombre de producto
+        detalles: v.viaje_detalles?.map((d: any) => ({
+            ...d,
+            producto_nombre: d.requerimiento_detalles?.productos?.nombre || `Producto #${d.id_detalle_requerimiento}`
+        })) || []
     };
 }

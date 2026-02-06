@@ -140,10 +140,7 @@ onMounted(() => {
                                         <td>
                                             <div class="flex-center">
                                                 <Truck class="icon-xs text-gray" />
-                                                <!-- Nota: el backend no trae nombre de producto en detalles aun, 
-                                                     pero si estuviera mapeado se mostraria aqui. 
-                                                     Por ahora mostramos ID o 'Producto' -->
-                                                Producto #{{ item.id_detalle_requerimiento }}
+                                                {{ item.producto_nombre }}
                                             </div>
                                         </td>
                                         <td class="text-right bold">{{ item.cantidad_recibida }}</td>
