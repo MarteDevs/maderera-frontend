@@ -7,7 +7,8 @@ import {
     minasService, 
     proveedoresService, 
     supervisoresService, 
-    productosService 
+    productosService,
+    preciosService
 } from '../../services/maestros.service';
 import type { Mina, Proveedor, Supervisor, Producto } from '../../types/models';
 
@@ -33,9 +34,73 @@ const minas = ref<Mina[]>([]);
 const proveedores = ref<Proveedor[]>([]);
 const supervisores = ref<Supervisor[]>([]);
 const productos = ref<Producto[]>([]);
+const preciosMap = ref<Record<number, number>>({}); // Mapa id_producto -> precio
 
 // Estado UI
 const saving = ref(false);
+
+const handleProveedorChange = async () => {
+    // Cuando cambia el proveedor, recargamos los precios
+    const idProveedor = Number(formData.value.id_proveedor);
+    if (!idProveedor) {
+        preciosMap.value = {};
+        return;
+    }
+    
+    try {
+        // Request ample limit to get all prices for this provider
+        const response: any = await preciosService.getAll({ 
+            id_proveedor: idProveedor, 
+            activo: true,
+            limit: 1000 // Ensure we get all prices
+        } as any);
+
+        console.log('💰 Precios raw response:', response);
+        
+        // Handle pagination structure { data: [], pagination: {} } vs plain array
+        const preciosList = Array.isArray(response) ? response : (response.data || []);
+        
+        console.log('💰 Precios list:', preciosList);
+
+        // Convertir array a mapa para búsqueda rápida
+        preciosMap.value = preciosList.reduce((acc: any, curr: any) => {
+            acc[curr.id_producto] = Number(curr.precio_compra_sugerido);
+            return acc;
+        }, {});
+        
+        console.log('💰 Precios Map:', preciosMap.value);
+        
+        // Actualizar precios de items ya agregados si existen en el nuevo mapa
+        formData.value.detalles.forEach((d: any) => {
+             if (d.id_producto && preciosMap.value[d.id_producto]) {
+                 d.precio_proveedor = preciosMap.value[d.id_producto];
+             }
+        });
+    } catch (e) {
+        console.error('Error cargando precios del proveedor:', e);
+        preciosMap.value = {};
+    }
+};
+
+const handleProductChange = (detalle: any) => {
+    const idProducto = Number(detalle.id_producto);
+    
+    // 1. Obtener precio de compra (Proveedor)
+    if (idProducto && preciosMap.value[idProducto]) {
+        detalle.precio_proveedor = preciosMap.value[idProducto];
+    } else {
+        detalle.precio_proveedor = 0;
+    }
+
+    // 2. Obtener precio de venta (Mina/Base) independentiente del proveedor
+    const product = productos.value.find(p => p.id_producto === idProducto);
+    if (product) {
+        // Asumiendo que el modelo de producto tiene precio_venta_base (verificado en lints anteriores)
+        detalle.precio_mina = product.precio_venta_base || 0;
+    } else {
+        detalle.precio_mina = 0;
+    }
+};
 
 const cargarMaestros = async () => {
     try {
@@ -45,16 +110,6 @@ const cargarMaestros = async () => {
             supervisoresService.getAll({ limit: 100 }),
             productosService.getAll({ limit: 1000 })
         ]);
-        
-        // Asumiendo que devuelven PaginatedResponse o array directo, 
-        // maestros.service.ts dice que devuelve PaginatedResponse<T> para getAll con params
-        // pero productosService.getAll devuelve response.data.data directo.
-        // Vamos a verificar si es array o objeto paginado.
-        // Revisando el servicio: return response.data.data; que suele ser { data: [], pagination: {} } O array []
-        // Si el backend sigue el estándar json: { status, data: { data: [], pagination... } }
-        // Entonces response.data.data es el objeto paginado.
-        // Si response.data.data es array, perfecto.
-        // Ajustaremos dinámicamente:
         
         minas.value = Array.isArray(m) ? m : (m as any).data || [];
         proveedores.value = Array.isArray(p) ? p : (p as any).data || [];
@@ -101,7 +156,10 @@ const save = async () => {
             id_supervisor: Number(formData.value.id_supervisor),
             detalles: formData.value.detalles.map(d => ({
                 ...d,
-                id_producto: Number(d.id_producto)
+                id_producto: Number(d.id_producto),
+                cantidad_solicitada: Number(d.cantidad_solicitada),
+                precio_proveedor: Number(d.precio_proveedor),
+                precio_mina: Number(d.precio_mina)
             }))
         };
 
@@ -142,7 +200,7 @@ onMounted(() => {
                 <div class="grid-cols-3">
                     <div class="form-group">
                         <label>Proveedor</label>
-                        <select v-model="formData.id_proveedor" class="form-control">
+                        <select v-model="formData.id_proveedor" class="form-control" @change="handleProveedorChange">
                             <option value="">Seleccione...</option>
                             <option v-for="m in proveedores" :key="m.id_proveedor" :value="m.id_proveedor">{{ m.nombre }}</option>
                         </select>
@@ -200,9 +258,15 @@ onMounted(() => {
                         <tbody>
                             <tr v-for="(detalle, index) in formData.detalles" :key="index">
                                 <td>
-                                    <select v-model="detalle.id_producto" class="form-control dense">
+                                    <select 
+                                        v-model="detalle.id_producto" 
+                                        class="form-control dense"
+                                        @change="handleProductChange(detalle)"
+                                    >
                                         <option value="">Producto...</option>
-                                        <option v-for="p in productos" :key="p.id_producto" :value="p.id_producto">{{ p.nombre }}</option>
+                                        <option v-for="p in productos" :key="p.id_producto" :value="p.id_producto">
+                                            {{ p.nombre }} {{ p.medidas?.descripcion ? ` - ${p.medidas.descripcion}` : '' }}
+                                        </option>
                                     </select>
                                 </td>
                                 <td>
