@@ -52,7 +52,8 @@ const tabs = [
 
 <style scoped>
 .maestros-view {
-    padding: 2rem;
+    width: 100%;
+    max-width: 100%;
 }
 
 .page-header {

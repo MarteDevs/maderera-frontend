@@ -53,10 +53,7 @@ const menuItems = [
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border);
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 100;
+    /* Fixed position removed to work with Grid layout */
 }
 
 .sidebar-header {

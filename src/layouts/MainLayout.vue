@@ -29,12 +29,14 @@ import AppHeader from '../components/layout/AppHeader.vue';
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
+    min-width: 0; /* CRITICAL FIX: Prevens grid blowout */
 }
 
 .page-content {
     flex: 1;
     overflow-y: auto;
-    padding: 2rem;
+    padding: 1.5rem 2rem;
     background-color: var(--background);
+    width: 100%;
 }
 </style>

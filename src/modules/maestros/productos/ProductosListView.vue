@@ -28,10 +28,10 @@ const formData = ref({
 // Columnas de la tabla
 const columns: Column[] = [
     { key: 'id_producto', label: 'ID', width: '80px' },
-    { key: 'nombre', label: 'Nombre' },
-    { key: 'medida', label: 'Medida', width: '150px' },
-    { key: 'clasificacion', label: 'Clasificación', width: '150px' },
-    { key: 'stock_actual', label: 'Stock', width: '100px', align: 'right' },
+    { key: 'nombre', label: 'Nombre', width: '25%' }, // Flexible con mínimo
+    { key: 'medida', label: 'Medida', width: '20%' },
+    { key: 'clasificacion', label: 'Clasificación', width: '15%' },
+    { key: 'stock_actual', label: 'Stock', width: '120px', align: 'right' },
     { key: 'precio_venta_base', label: 'Precio', width: '120px', align: 'right' },
 ];
 
