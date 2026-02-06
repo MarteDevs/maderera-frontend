@@ -35,14 +35,17 @@ export interface Requerimiento {
 
 export const requerimientosService = {
     async getAll() {
-        // TODO: Agregar soporte para paginación si el backend lo soporta
         const response = await api.get('/requirements');
+        // Transformar datos para coincidir con la interfaz (singular vs plural)
+        if (response.data.data && Array.isArray(response.data.data.data)) {
+            response.data.data.data = response.data.data.data.map(mapRequerimientoFromBackend);
+        }
         return response.data.data;
     },
 
     async getById(id: number) {
         const response = await api.get(`/requirements/${id}`);
-        return response.data.data;
+        return mapRequerimientoFromBackend(response.data.data);
     },
 
     async create(data: Requerimiento) {
@@ -65,3 +68,18 @@ export const requerimientosService = {
         return response.data.data;
     }
 };
+
+// Helper para mapear respuesta del backend (Prisma) a interfaz del Fronend
+function mapRequerimientoFromBackend(req: any): any {
+    if (!req) return null;
+    return {
+        ...req,
+        proveedor: req.proveedores,
+        mina: req.minas,
+        supervisor: req.supervisores,
+        detalles: req.requerimiento_detalles?.map((d: any) => ({
+            ...d,
+            producto: d.productos
+        })) || []
+    };
+}

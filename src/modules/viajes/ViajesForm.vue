@@ -25,7 +25,7 @@ const formData = ref({
 const idRequerimiento = Number(route.params.id_requerimiento);
 
 // Computed
-const hasItems = computed(() => formData.value.detalles.length > 0);
+
 
 // Methods
 const loadRequerimiento = async () => {

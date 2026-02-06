@@ -12,7 +12,7 @@ import {
 const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Requerimientos', path: '/requirements', icon: FileText },
-    { label: 'Viajes', path: '/trips', icon: Truck },
+    { label: 'Viajes', path: '/viajes', icon: Truck },
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
 ];
