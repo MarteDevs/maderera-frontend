@@ -4,7 +4,7 @@ import { useInventarioStore } from './inventario.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Search, Package, History } from 'lucide-vue-next';
+import { Package, History } from 'lucide-vue-next';
 import type { Column } from '../../components/ui/DataTable.vue';
 
 const store = useInventarioStore();
@@ -43,8 +43,7 @@ const applyStockFilters = () => {
     store.fetchStock();
 };
 
-const handleStockSearch = (e: Event) => {
-    const value = (e.target as HTMLInputElement).value;
+const handleStockSearch = (value: string) => {
     store.setStockFilters({ search: value });
 };
 
@@ -105,20 +104,23 @@ watch(activeTab, () => {
             </div>
 
             <div class="tab-content">
-                <!-- Barra de búsqueda y Filtros STOCK -->
-                <div class="actions-bar" v-if="activeTab === 'stock'">
-                    <div class="filters-bar">
-                        <div class="search-box">
-                            <Search class="search-icon" />
-                            <input 
-                                :value="stockFilters.search"
-                                @input="handleStockSearch"
-                                type="text" 
-                                placeholder="Buscar producto..." 
-                                class="search-input"
-                            />
-                        </div>
-                        <div class="filter-group">
+                <!-- Tabla de Stock -->
+                <DataTable 
+                    v-if="activeTab === 'stock'"
+                    :columns="stockColumns" 
+                    :data="stock" 
+                    :loading="loading"
+                    searchable
+                    search-placeholder="Buscar producto..."
+                    :current-page="stockPagination.page"
+                    :total-pages="stockPagination.totalPages"
+                    :total="stockPagination.total"
+                    :page-size="stockPagination.limit"
+                    @search="handleStockSearch"
+                    @page-change="handleStockPageChange"
+                >
+                    <template #toolbar-filters>
+                        <div class="filter-item">
                             <select v-model="stockFilters.id_medida" @change="applyStockFilters" class="filter-select">
                                 <option :value="undefined">Todas las Medidas</option>
                                 <option v-for="medida in medidas" :key="medida.id_medida" :value="medida.id_medida">
@@ -126,49 +128,7 @@ watch(activeTab, () => {
                                 </option>
                             </select>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Filtros KARDEX -->
-                <div class="actions-bar" v-if="activeTab === 'kardex'">
-                    <div class="filters-bar">
-                         <div class="filter-group">
-                            <select v-model="kardexFilters.id_producto" @change="applyKardexFilters" class="filter-select">
-                                <option :value="undefined">Todos los Productos</option>
-                                <option v-for="prod in productos" :key="prod.id_producto" :value="prod.id_producto">
-                                    {{ prod.nombre }}
-                                </option>
-                            </select>
-
-                            <select v-model="kardexFilters.tipo_movimiento" @change="applyKardexFilters" class="filter-select">
-                                <option value="">Todos los Movimientos</option>
-                                <option value="ENTRADA">ENTRADA</option>
-                                <option value="SALIDA">SALIDA</option>
-                                <option value="AJUSTE_POS">AJUSTE (+)</option>
-                                <option value="AJUSTE_NEG">AJUSTE (-)</option>
-                                <option value="DEVOLUCION">DEVOLUCION</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                             <input type="date" v-model="kardexFilters.fecha_inicio" @change="applyKardexFilters" class="filter-date" />
-                             <span class="text-gray">-</span>
-                             <input type="date" v-model="kardexFilters.fecha_fin" @change="applyKardexFilters" class="filter-date" />
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tabla de Stock -->
-                <DataTable 
-                    v-if="activeTab === 'stock'"
-                    :columns="stockColumns" 
-                    :data="stock" 
-                    :loading="loading"
-                    :current-page="stockPagination.page"
-                    :total-pages="stockPagination.totalPages"
-                    :total="stockPagination.total"
-                    :page-size="stockPagination.limit"
-                    @page-change="handleStockPageChange"
-                >
+                    </template>
                     <template #cell-stock_actual="{ value }">
                         <span 
                             class="badge" 
@@ -191,6 +151,35 @@ watch(activeTab, () => {
                     :page-size="kardexPagination.limit"
                     @page-change="handleKardexPageChange"
                 >
+                    <template #toolbar-filters>
+                        <div class="filter-item">
+                            <select v-model="kardexFilters.id_producto" @change="applyKardexFilters" class="filter-select">
+                                <option :value="undefined">Todos los Productos</option>
+                                <option v-for="prod in productos" :key="prod.id_producto" :value="prod.id_producto">
+                                    {{ prod.nombre }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <select v-model="kardexFilters.tipo_movimiento" @change="applyKardexFilters" class="filter-select">
+                                <option value="">Todos los Movimientos</option>
+                                <option value="ENTRADA">ENTRADA</option>
+                                <option value="SALIDA">SALIDA</option>
+                                <option value="AJUSTE_POS">AJUSTE (+)</option>
+                                <option value="AJUSTE_NEG">AJUSTE (-)</option>
+                                <option value="DEVOLUCION">DEVOLUCION</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-item">
+                            <div class="date-range">
+                                <input type="date" v-model="kardexFilters.fecha_inicio" @change="applyKardexFilters" class="filter-date" />
+                                <span>-</span>
+                                <input type="date" v-model="kardexFilters.fecha_fin" @change="applyKardexFilters" class="filter-date" />
+                            </div>
+                        </div>
+                    </template>
                     <template #cell-fecha="{ value }">
                         {{ new Date(value).toLocaleString() }}
                     </template>
@@ -261,16 +250,59 @@ watch(activeTab, () => {
     border-bottom-color: var(--primary);
 }
 
-.actions-bar { margin-bottom: 1rem; }
-
-.search-box { position: relative; max-width: 300px; }
-.search-icon {
-    position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
-    width: 1.25rem; height: 1.25rem; color: var(--text-light);
+/* Filters in toolbar */
+.filter-item {
+    margin-right: 1.5rem;
 }
-.search-input {
-    width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem;
-    border: 1px solid var(--border); border-radius: var(--radius-md); font-size: 0.875rem;
+
+.filter-select {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background-color: white;
+    font-size: 0.875rem;
+    color: var(--text);
+    min-width: 160px;
+    max-width: 200px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-select:hover {
+    border-color: var(--text-light);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.filter-date {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background-color: white;
+    font-size: 0.875rem;
+    color: var(--text);
+    min-width: 140px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-date:hover {
+    border-color: var(--text-light);
+}
+
+.filter-date:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .badge {
