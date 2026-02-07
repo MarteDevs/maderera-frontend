@@ -2,11 +2,11 @@ import api from '../../services/api';
 
 export interface ProductoStock {
     id_producto: number;
-    nombre: string;
+    producto: string; // Es producto, no nombre
     stock_actual: number;
-    medida?: { descripcion: string };
-    clasificacion?: { nombre: string };
-    valor_total?: number; // Opcional, si el backend lo calcula
+    medida: string; // Viene como string desde la vista
+    clasificacion?: string; // Viene como string desde la vista
+    valor_total?: number;
 }
 
 export interface MovimientoStock {
@@ -30,7 +30,7 @@ export interface AjusteStockInput {
 }
 
 export const inventarioService = {
-    async getStock(params?: { id_clasificacion?: number; search?: string }) {
+    async getStock(params?: { page?: number; limit?: number; id_clasificacion?: number; search?: string }) {
         const response = await api.get('/inventory', { params });
         return response.data.data;
     },

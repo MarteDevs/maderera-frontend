@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { inventarioService, type ProductoStock, type MovimientoStock } from './inventario.service';
 
 export const useInventarioStore = defineStore('inventario', () => {
-    const stock = ref<ProductoStock[]>([]);
-    const kardex = ref<MovimientoStock[]>([]);
+    // Raw data from API (no filters)
+    const allStock = ref<ProductoStock[]>([]);
+    const allKardex = ref<MovimientoStock[]>([]);
     const loading = ref(false);
     const error = ref<string | null>(null);
 
@@ -38,32 +39,100 @@ export const useInventarioStore = defineStore('inventario', () => {
         fecha_fin: ''
     });
 
+    // --- Computed: Filtered Stock --- //
+    const filteredStock = computed(() => {
+        let result = [...allStock.value];
+
+        // Apply search filter
+        if (stockFilters.value.search) {
+            const search = stockFilters.value.search.toLowerCase();
+            result = result.filter(item =>
+                item.producto?.toLowerCase().includes(search) ||
+                item.medida?.toLowerCase().includes(search) ||
+                item.clasificacion?.toLowerCase().includes(search)
+            );
+        }
+
+        // Apply bajo_stock filter
+        if (stockFilters.value.bajo_stock) {
+            result = result.filter(item => (item.stock_actual || 0) < 100);
+        }
+
+        return result;
+    });
+
+    // --- Computed: Paginated Stock --- //
+    const stock = computed(() => {
+        const start = (stockPagination.value.page - 1) * stockPagination.value.limit;
+        const end = start + stockPagination.value.limit;
+
+        // Update pagination totals
+        const total = filteredStock.value.length;
+        stockPagination.value.total = total;
+        stockPagination.value.totalPages = Math.ceil(total / stockPagination.value.limit);
+
+        return filteredStock.value.slice(start, end);
+    });
+
+    // --- Computed: Filtered Kardex --- //
+    const filteredKardex = computed(() => {
+        let result = [...allKardex.value];
+
+        if (kardexFilters.value.id_producto) {
+            // Since kardex doesn't have id_producto, we filter by product name matching
+            // The frontend will need to get the product name from maestros
+            // For now, skip this filter until we can properly match
+        }
+
+        if (kardexFilters.value.tipo_movimiento) {
+            result = result.filter(item => item.tipo === kardexFilters.value.tipo_movimiento);
+        }
+
+        if (kardexFilters.value.fecha_inicio && kardexFilters.value.fecha_fin) {
+            const start = new Date(kardexFilters.value.fecha_inicio);
+            const end = new Date(kardexFilters.value.fecha_fin);
+            result = result.filter(item => {
+                const fecha = new Date(item.fecha);
+                return fecha >= start && fecha <= end;
+            });
+        }
+
+        return result;
+    });
+
+    // --- Computed: Paginated Kardex --- //
+    const kardex = computed(() => {
+        const start = (kardexPagination.value.page - 1) * kardexPagination.value.limit;
+        const end = start + kardexPagination.value.limit;
+
+        // Update pagination totals
+        const total = filteredKardex.value.length;
+        kardexPagination.value.total = total;
+        kardexPagination.value.totalPages = Math.ceil(total / kardexPagination.value.limit);
+
+        return filteredKardex.value.slice(start, end);
+    });
+
     async function fetchStock() {
         loading.value = true;
         error.value = null;
         try {
-            const params = {
-                page: stockPagination.value.page,
-                limit: stockPagination.value.limit,
-                search: stockFilters.value.search || undefined,
-                id_clasificacion: stockFilters.value.id_clasificacion || undefined,
-                id_medida: stockFilters.value.id_medida || undefined,
-                bajo_stock: stockFilters.value.bajo_stock || undefined
-            };
+            // Fetch ALL stock without filters (backend only does basic query)
+            const response = await inventarioService.getStock({
+                page: 1,
+                limit: 10000 // Get all records
+            });
 
-            const response = await inventarioService.getStock(params);
-
-            // Stock response structure: { data: [...], pagination: { ... } }
             if (response && response.data) {
-                stock.value = response.data;
-                if (response.pagination) {
-                    stockPagination.value = { ...stockPagination.value, ...response.pagination };
-                }
+                allStock.value = response.data;
             } else if (Array.isArray(response)) {
-                stock.value = response;
+                allStock.value = response;
             } else {
-                stock.value = [];
+                allStock.value = [];
             }
+
+            // Reset to page 1
+            stockPagination.value.page = 1;
         } catch (e: any) {
             console.error('Error fetching stock:', e);
             error.value = e.response?.data?.message || 'Error al cargar inventario';
@@ -76,27 +145,22 @@ export const useInventarioStore = defineStore('inventario', () => {
         loading.value = true;
         error.value = null;
         try {
-            const params = {
-                page: kardexPagination.value.page,
-                limit: kardexPagination.value.limit,
-                id_producto: kardexFilters.value.id_producto || undefined,
-                tipo_movimiento: kardexFilters.value.tipo_movimiento || undefined,
-                fecha_inicio: kardexFilters.value.fecha_inicio || undefined,
-                fecha_fin: kardexFilters.value.fecha_fin || undefined
-            };
-
-            const response = await inventarioService.getKardex(params);
+            // Fetch ALL kardex without filters
+            const response = await inventarioService.getKardex({
+                page: 1,
+                limit: 10000 // Get all records
+            });
 
             if (response && response.data) {
-                kardex.value = response.data;
-                if (response.pagination) {
-                    kardexPagination.value = { ...kardexPagination.value, ...response.pagination };
-                }
+                allKardex.value = response.data;
             } else if (Array.isArray(response)) {
-                kardex.value = response;
+                allKardex.value = response;
             } else {
-                kardex.value = [];
+                allKardex.value = [];
             }
+
+            // Reset to page 1
+            kardexPagination.value.page = 1;
         } catch (e: any) {
             console.error('Error fetching kardex:', e);
             error.value = e.response?.data?.message || 'Error al cargar kardex';
@@ -108,24 +172,24 @@ export const useInventarioStore = defineStore('inventario', () => {
     // --- Actions --- //
     function setStockPage(page: number) {
         stockPagination.value.page = page;
-        fetchStock();
+        // No need to fetch - computed property handles it
     }
 
     function setStockFilters(newFilters: any) {
         stockFilters.value = { ...stockFilters.value, ...newFilters };
-        stockPagination.value.page = 1;
-        fetchStock();
+        stockPagination.value.page = 1; // Reset to first page
+        // No need to fetch - computed property handles it
     }
 
     function setKardexPage(page: number) {
         kardexPagination.value.page = page;
-        fetchKardex();
+        // No need to fetch - computed property handles it
     }
 
     function setKardexFilters(newFilters: any) {
         kardexFilters.value = { ...kardexFilters.value, ...newFilters };
-        kardexPagination.value.page = 1;
-        fetchKardex();
+        kardexPagination.value.page = 1; // Reset to first page
+        // No need to fetch - computed property handles it
     }
 
     return {

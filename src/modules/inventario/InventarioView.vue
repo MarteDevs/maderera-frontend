@@ -39,10 +39,6 @@ const handleStockPageChange = (page: number) => {
     store.setStockPage(page);
 };
 
-const applyStockFilters = () => {
-    store.fetchStock();
-};
-
 const handleStockSearch = (value: string) => {
     store.setStockFilters({ search: value });
 };
@@ -50,10 +46,6 @@ const handleStockSearch = (value: string) => {
 // Methods Kardex
 const handleKardexPageChange = (page: number) => {
     store.setKardexPage(page);
-};
-
-const applyKardexFilters = () => {
-    store.fetchKardex();
 };
 
 const loadData = () => {
@@ -121,7 +113,7 @@ watch(activeTab, () => {
                 >
                     <template #toolbar-filters>
                         <div class="filter-item">
-                            <select v-model="stockFilters.id_medida" @change="applyStockFilters" class="filter-select">
+                            <select v-model="stockFilters.id_medida" class="filter-select">
                                 <option :value="undefined">Todas las Medidas</option>
                                 <option v-for="medida in medidas" :key="medida.id_medida" :value="medida.id_medida">
                                     {{ medida.descripcion }}
@@ -153,7 +145,7 @@ watch(activeTab, () => {
                 >
                     <template #toolbar-filters>
                         <div class="filter-item">
-                            <select v-model="kardexFilters.id_producto" @change="applyKardexFilters" class="filter-select">
+                            <select v-model="kardexFilters.id_producto" class="filter-select">
                                 <option :value="undefined">Todos los Productos</option>
                                 <option v-for="prod in productos" :key="prod.id_producto" :value="prod.id_producto">
                                     {{ prod.nombre }}
@@ -162,7 +154,7 @@ watch(activeTab, () => {
                         </div>
 
                         <div class="filter-item">
-                            <select v-model="kardexFilters.tipo_movimiento" @change="applyKardexFilters" class="filter-select">
+                            <select v-model="kardexFilters.tipo_movimiento" class="filter-select">
                                 <option value="">Todos los Movimientos</option>
                                 <option value="ENTRADA">ENTRADA</option>
                                 <option value="SALIDA">SALIDA</option>
@@ -174,9 +166,9 @@ watch(activeTab, () => {
 
                         <div class="filter-item">
                             <div class="date-range">
-                                <input type="date" v-model="kardexFilters.fecha_inicio" @change="applyKardexFilters" class="filter-date" />
+                                <input type="date" v-model="kardexFilters.fecha_inicio" class="filter-date" />
                                 <span>-</span>
-                                <input type="date" v-model="kardexFilters.fecha_fin" @change="applyKardexFilters" class="filter-date" />
+                                <input type="date" v-model="kardexFilters.fecha_fin" class="filter-date" />
                             </div>
                         </div>
                     </template>
