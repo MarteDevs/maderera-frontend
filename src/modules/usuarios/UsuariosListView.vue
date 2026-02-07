@@ -226,7 +226,6 @@ const handlePageChange = (page: number) => {
             :visible="showFormModal"
             :title="modalTitle"
             @close="showFormModal = false"
-            @submit="handleSubmit"
         >
             <div class="form-grid">
                 <div class="form-group">
@@ -280,6 +279,15 @@ const handlePageChange = (page: number) => {
                     </select>
                 </div>
             </div>
+
+            <template #footer>
+                <button type="button" class="btn btn-secondary" @click="showFormModal = false">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" @click="handleSubmit">
+                    {{ isEditing ? 'Actualizar' : 'Guardar' }}
+                </button>
+            </template>
         </FormModal>
 
         <!-- Modal de cambio de contraseña -->
@@ -287,7 +295,6 @@ const handlePageChange = (page: number) => {
             :visible="showPasswordModal"
             :title="passwordModalTitle"
             @close="showPasswordModal = false"
-            @submit="handlePasswordChange"
         >
             <div class="form-grid">
                 <div class="form-group full-width">
@@ -310,6 +317,15 @@ const handlePageChange = (page: number) => {
                     />
                 </div>
             </div>
+
+            <template #footer>
+                <button type="button" class="btn btn-secondary" @click="showPasswordModal = false">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" @click="handlePasswordChange">
+                    Cambiar Contraseña
+                </button>
+            </template>
         </FormModal>
     </div>
 </template>
