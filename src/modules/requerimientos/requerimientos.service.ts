@@ -38,8 +38,8 @@ export interface Requerimiento {
 }
 
 export const requerimientosService = {
-    async getAll() {
-        const response = await api.get('/requirements');
+    async getAll(params?: any) {
+        const response = await api.get('/requirements', { params });
         console.log('API Response:', response.data); // Debug
 
         // Estructura esperada: { status: 'success', data: { data: [], pagination: {} } }

@@ -4,16 +4,15 @@ import { useViajesStore } from './viajes.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
 import { Search, X, Truck } from 'lucide-vue-next';
-import { useRouter } from 'vue-router';
 import type { Column } from '../../components/ui/DataTable.vue';
+
+import { useMaestrosStore } from '../../stores/maestros.store';
 
 // Store
 const store = useViajesStore();
-const { viajes, loading } = storeToRefs(store);
-const router = useRouter();
-
-// Filtros
-const searchQuery = ref('');
+const maestrosStore = useMaestrosStore();
+const { viajes, loading, pagination, filters } = storeToRefs(store);
+const { proveedores, minas } = storeToRefs(maestrosStore);
 
 // Modal State
 const showModal = ref(false);
@@ -24,6 +23,7 @@ const columns: Column[] = [
     { key: 'id_viaje', label: 'Control #', sortable: true },
     { key: 'req_codigo', label: 'Requerimiento' }, 
     { key: 'prov_nombre', label: 'Proveedor' }, 
+    { key: 'mina_nombre', label: 'Mina' },
     { key: 'placa_vehiculo', label: 'Placa' },
     { key: 'conductor', label: 'Conductor' },
     { key: 'fecha_ingreso', label: 'Ingreso', sortable: true },
@@ -36,9 +36,24 @@ const openDetails = (viaje: any) => {
     showModal.value = true;
 };
 
+const handlePageChange = (page: number) => {
+    store.setPage(page);
+};
+
+const applyFilters = () => {
+    store.fetchViajes();
+};
+
+const handleSearch = (e: Event) => {
+    const value = (e.target as HTMLInputElement).value;
+    store.setFilters({ search: value });
+};
+
 // Cargar datos
 onMounted(() => {
     store.fetchViajes();
+    maestrosStore.fetchProveedores();
+    maestrosStore.fetchMinas();
 });
 </script>
 
@@ -56,14 +71,39 @@ onMounted(() => {
         <div class="content-container">
             <!-- Filtros y Búsqueda -->
             <div class="filters-bar">
-                <div class="search-box">
-                    <Search class="search-icon" />
-                    <input 
-                        v-model="searchQuery" 
-                        type="text" 
-                        placeholder="Buscar por placa, conductor..." 
-                        class="search-input"
-                    />
+                <div class="filter-group">
+                    <div class="search-box">
+                        <Search class="search-icon" />
+                        <input 
+                            :value="filters.search"
+                            @input="handleSearch"
+                            type="text" 
+                            placeholder="Buscar por placa, conductor..." 
+                            class="search-input"
+                        />
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
+                        <option value="">Todos los Proveedores</option>
+                        <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
+                            {{ prov.nombre }}
+                        </option>
+                    </select>
+
+                    <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
+                        <option value="">Todas las Minas</option>
+                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                            {{ mina.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" title="Fecha Inicio" />
+                    <span class="text-gray">-</span>
+                    <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" title="Fecha Fin" />
                 </div>
             </div>
 
@@ -72,7 +112,11 @@ onMounted(() => {
                 :columns="columns" 
                 :data="viajes" 
                 :loading="loading"
-                :search-query="searchQuery"
+                :current-page="pagination.page"
+                :total-pages="pagination.totalPages"
+                :total="pagination.total"
+                :page-size="pagination.limit"
+                @page-change="handlePageChange"
             >
                 <template #cell-id_viaje="{ value }">
                     <span class="font-medium text-primary">#{{ value }}</span>
@@ -211,6 +255,10 @@ onMounted(() => {
 
 .filters-bar {
     margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
 }
 
 .search-box {
@@ -234,6 +282,32 @@ onMounted(() => {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     font-size: 0.875rem;
+}
+
+.filter-group {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-select {
+    padding: 0.625rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background-color: white;
+    font-size: 0.875rem;
+    color: var(--text);
+    min-width: 150px;
+}
+
+.filter-date {
+    padding: 0.625rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background-color: white;
+    font-size: 0.875rem;
+    color: var(--text);
 }
 
 .btn-icon {

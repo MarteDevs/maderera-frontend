@@ -8,13 +8,43 @@ export const useViajesStore = defineStore('viajes', () => {
     const loading = ref(false);
     const error = ref<string | null>(null);
 
-    async function fetchViajes(page = 1, limit = 20) {
+    // Paginación y Filtros
+    const pagination = ref({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
+    });
+
+    const filters = ref({
+        search: '',
+        id_proveedor: '',
+        id_mina: '',
+        fecha_inicio: '',
+        fecha_fin: ''
+    });
+
+    async function fetchViajes() {
         loading.value = true;
         error.value = null;
         try {
-            const response = await viajesService.getAll(page, limit);
-            if (response && response.data && Array.isArray(response.data)) {
+            const params: any = {
+                page: pagination.value.page,
+                limit: pagination.value.limit,
+                search: filters.value.search || undefined,
+                id_proveedor: filters.value.id_proveedor || undefined,
+                id_mina: filters.value.id_mina || undefined,
+                fecha_inicio: filters.value.fecha_inicio || undefined,
+                fecha_fin: filters.value.fecha_fin || undefined
+            };
+
+            const response = await viajesService.getAll(params);
+
+            if (response && response.data) {
                 viajes.value = response.data;
+                if (response.page) pagination.value.page = response.page;
+                if (response.total) pagination.value.total = response.total;
+                if (response.totalPages) pagination.value.totalPages = response.totalPages;
             } else if (Array.isArray(response)) {
                 viajes.value = response;
             } else {
@@ -47,6 +77,7 @@ export const useViajesStore = defineStore('viajes', () => {
         error.value = null;
         try {
             await viajesService.create(data);
+            await fetchViajes();
             return true;
         } catch (e: any) {
             console.error('Error creating viaje:', e);
@@ -57,13 +88,28 @@ export const useViajesStore = defineStore('viajes', () => {
         }
     }
 
+    function setPage(page: number) {
+        pagination.value.page = page;
+        fetchViajes();
+    }
+
+    function setFilters(newFilters: any) {
+        filters.value = { ...filters.value, ...newFilters };
+        pagination.value.page = 1;
+        fetchViajes();
+    }
+
     return {
         viajes,
         currentViaje,
         loading,
         error,
+        pagination,
+        filters,
         fetchViajes,
         fetchViajesByRequerimiento,
-        createViaje
+        createViaje,
+        setPage,
+        setFilters
     };
 });

@@ -37,6 +37,7 @@ export const inventarioService = {
 
     async getKardex(params?: { id_producto?: number; page?: number; limit?: number }) {
         const response = await api.get('/inventory/kardex', { params });
+        // Response format: { status: 'success', data: { data: [], pagination: {} } }
         return response.data.data;
     },
 

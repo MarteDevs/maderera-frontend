@@ -8,19 +8,52 @@ export const useRequerimientosStore = defineStore('requerimientos', () => {
     const loading = ref(false);
     const error = ref<string | null>(null);
 
+    // Paginación y Filtros
+    const pagination = ref({
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0
+    });
+
+    const filters = ref({
+        search: '',
+        id_proveedor: '',
+        id_mina: '',
+        estado: '',
+        fecha_inicio: '',
+        fecha_fin: ''
+    });
+
     async function fetchRequerimientos() {
         loading.value = true;
         error.value = null;
         try {
-            const response = await requerimientosService.getAll();
-            // Handle paginated response structure { data: [], pagination: {} }
-            if (response && response.data && Array.isArray(response.data)) {
+            // Construir params limpiando valores vacíos
+            const params: any = {
+                page: pagination.value.page,
+                limit: pagination.value.limit,
+                search: filters.value.search || undefined,
+                id_proveedor: filters.value.id_proveedor || undefined,
+                id_mina: filters.value.id_mina || undefined,
+                estado: filters.value.estado || undefined,
+                fecha_inicio: filters.value.fecha_inicio || undefined,
+                fecha_fin: filters.value.fecha_fin || undefined
+            };
+
+            const response = await requerimientosService.getAll(params);
+
+            if (response && response.data) {
                 requerimientos.value = response.data;
+                // Actualizar info de paginación si viene en la respuesta
+                if (response.page) pagination.value.page = response.page;
+                if (response.total) pagination.value.total = response.total;
+                if (response.totalPages) pagination.value.totalPages = response.totalPages;
             } else if (Array.isArray(response)) {
+                // Fallback si la respuesta no es paginada (no debería ocurrir con el servicio actualizado)
                 requerimientos.value = response;
             } else {
                 requerimientos.value = [];
-                console.warn('Unexpected response format in fetchRequerimientos', response);
             }
         } catch (e: any) {
             console.error('Error fetching requerimientos:', e);
@@ -35,9 +68,6 @@ export const useRequerimientosStore = defineStore('requerimientos', () => {
         error.value = null;
         try {
             currentRequerimiento.value = await requerimientosService.getById(id);
-            // Si el backend soporta endpoint de progreso separado, podrías llamarlo aquí y mezclarlo
-            // const progress = await requerimientosService.getProgress(id);
-            // if (currentRequerimiento.value) currentRequerimiento.value.porcentaje_progreso = progress.porcentaje_total;
         } catch (e: any) {
             console.error('Error fetching requerimiento details:', e);
             error.value = e.response?.data?.message || 'Error al cargar el detalle del requerimiento';
@@ -51,7 +81,7 @@ export const useRequerimientosStore = defineStore('requerimientos', () => {
         error.value = null;
         try {
             await requerimientosService.create(data);
-            await fetchRequerimientos(); // Recargar lista
+            await fetchRequerimientos();
             return true;
         } catch (e: any) {
             console.error('Error creating requerimiento:', e);
@@ -62,13 +92,28 @@ export const useRequerimientosStore = defineStore('requerimientos', () => {
         }
     }
 
+    function setPage(page: number) {
+        pagination.value.page = page;
+        fetchRequerimientos();
+    }
+
+    function setFilters(newFilters: any) {
+        filters.value = { ...filters.value, ...newFilters };
+        pagination.value.page = 1; // Resetear a primera página al filtrar
+        fetchRequerimientos();
+    }
+
     return {
         requerimientos,
         currentRequerimiento,
         loading,
         error,
+        pagination,
+        filters,
         fetchRequerimientos,
         fetchRequerimientoById,
-        createRequerimiento
+        createRequerimiento,
+        setPage,
+        setFilters
     };
 });

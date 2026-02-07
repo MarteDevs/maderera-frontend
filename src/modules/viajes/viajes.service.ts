@@ -30,8 +30,8 @@ export interface Viaje {
 }
 
 export const viajesService = {
-    async getAll(page = 1, limit = 20) {
-        const response = await api.get('/viajes', { params: { page, limit } });
+    async getAll(params?: any) {
+        const response = await api.get('/viajes', { params });
         // Mapeo manual para ajustar la estructura anidada de Prisma al Frontend
         if (response.data.data && Array.isArray(response.data.data.data)) {
             response.data.data.data = response.data.data.data.map(mapViajeFromBackend);
@@ -62,6 +62,7 @@ function mapViajeFromBackend(v: any): any {
         // Aplanar datos para la tabla (DataTable no soporta keys anidadas)
         req_codigo: v.requerimientos?.codigo || '---',
         prov_nombre: v.requerimientos?.proveedores?.nombre || '---',
+        mina_nombre: v.requerimientos?.minas?.nombre || '---',
         // Estructura anidada para el Modal de Detalles
         requerimiento: v.requerimientos ? {
             ...v.requerimientos,
