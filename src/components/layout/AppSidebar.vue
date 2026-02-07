@@ -46,36 +46,38 @@ const menuItems = [
 
 <style scoped>
 .sidebar {
-    width: 260px;
+    width: 280px;
     height: 100vh;
-    background-color: var(--secondary);
+    background: linear-gradient(180deg, var(--secondary) 0%, #0F172A 100%);
     color: white;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--border);
-    /* Fixed position removed to work with Grid layout */
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    z-index: 100;
 }
 
 .sidebar-header {
-    height: 64px;
+    height: 80px;
     display: flex;
     align-items: center;
-    padding: 0 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 1.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .logo {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 700;
-    color: var(--surface);
+    color: white;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-nav {
     flex: 1;
-    padding: 1.5rem 1rem;
+    padding: 2rem 1rem;
     overflow-y: auto;
 }
 
@@ -91,31 +93,53 @@ const menuItems = [
 .nav-link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
     border-radius: var(--radius-md);
-    color: #94a3b8; /* Slate 400 */
-    transition: all 0.2s;
+    color: rgba(255, 255, 255, 0.6);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-weight: 500;
+    font-size: 0.95rem;
+    position: relative;
+    overflow: hidden;
 }
 
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.08);
     color: white;
+    transform: translateX(4px);
 }
 
 .nav-link.router-link-active {
-    background-color: var(--primary);
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
     color: white;
+    box-shadow: 0 4px 12px rgba(139, 30, 30, 0.4);
+}
+
+.nav-link.router-link-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: white;
+    border-radius: 0 2px 2px 0;
 }
 
 .icon {
     width: 1.25rem;
     height: 1.25rem;
+    transition: transform 0.3s;
+}
+
+.nav-link:hover .icon {
+    transform: scale(1.1);
 }
 
 .sidebar-footer {
-    padding: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.1);
 }
 </style>
