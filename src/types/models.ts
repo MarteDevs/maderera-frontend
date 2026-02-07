@@ -16,6 +16,7 @@ export interface Producto {
     observaciones?: string;
     medidas?: Medida;
     clasificaciones?: Clasificacion;
+    producto_proveedores?: ProductoProveedor[];
     deleted_at?: string;
     created_at?: string;
     updated_at?: string;

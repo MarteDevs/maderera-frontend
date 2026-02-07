@@ -23,6 +23,7 @@ const formData = ref({
     id_clasificacion: undefined as number | undefined,
     precio_venta_base: 0,
     observaciones: '',
+    proveedores: [] as Array<{ id_proveedor: number, precio_compra_sugerido: number }>
 });
 
 // Columnas de la tabla
@@ -54,16 +55,13 @@ const modalTitle = computed(() => (isEditing.value ? 'Editar Producto' : 'Nuevo 
 onMounted(async () => {
     console.log('🔍 ProductosListView: onMounted iniciado');
     try {
-        console.log('📡 Llamando a fetchProductos y fetchCatalogos...');
+        console.log('📡 Llamando a fetchProductos, Catalogos y Proveedores...');
         await Promise.all([
             maestrosStore.fetchProductos(),
             maestrosStore.fetchCatalogos(),
+            maestrosStore.fetchProveedores() // New fetch
         ]);
-        console.log('✅ Datos cargados:', {
-            productos: maestrosStore.productos.length,
-            medidas: maestrosStore.medidas.length,
-            clasificaciones: maestrosStore.clasificaciones.length
-        });
+        console.log('✅ Datos cargados');
     } catch (error) {
         console.error('❌ Error al cargar datos:', error);
     }
@@ -77,28 +75,49 @@ const openCreateModal = () => {
         id_clasificacion: undefined,
         precio_venta_base: 0,
         observaciones: '',
+        proveedores: []
     };
     showFormModal.value = true;
 };
 
 const openEditModal = (producto: Producto) => {
     editingProducto.value = producto;
+    
+    // Map existing providers if any
+    const existingProveedores = producto.producto_proveedores?.map((pp: any) => ({
+        id_proveedor: pp.id_proveedor,
+        precio_compra_sugerido: pp.precio_compra_sugerido
+    })) || [];
+
     formData.value = {
         nombre: producto.nombre,
         id_medida: producto.id_medida,
         id_clasificacion: producto.id_clasificacion,
         precio_venta_base: producto.precio_venta_base,
         observaciones: producto.observaciones || '',
+        proveedores: existingProveedores
     };
     showFormModal.value = true;
 };
 
+const addProveedorRow = () => {
+    formData.value.proveedores.push({ id_proveedor: 0, precio_compra_sugerido: 0 });
+};
+
+const removeProveedorRow = (index: number) => {
+    formData.value.proveedores.splice(index, 1);
+};
+
 const handleSubmit = async () => {
     try {
+        // Validation: remove items with no provider selected
+        const validProveedores = formData.value.proveedores.filter(p => p.id_proveedor > 0);
+        const payload = { ...formData.value, proveedores: validProveedores };
+
         if (isEditing.value && editingProducto.value) {
-            await maestrosStore.updateProducto(editingProducto.value.id_producto, formData.value);
+            await maestrosStore.updateProducto(editingProducto.value.id_producto, payload);
         } else {
-            await maestrosStore.createProducto(formData.value);
+            await maestrosStore.createProducto(payload);
         }
         showFormModal.value = false;
     } catch (error) {
@@ -247,6 +266,41 @@ const handleSearch = (query: string) => {
                         rows="3"
                         placeholder="Observaciones adicionales..."
                     ></textarea>
+                </div>
+
+                <!-- Sección Precios Proveedores -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <h4>Precios de Proveedores</h4>
+                        <button type="button" class="btn-text" @click="addProveedorRow">
+                            <Plus class="icon-sm" /> Agregar
+                        </button>
+                    </div>
+                    
+                    <div v-if="formData.proveedores.length === 0" class="empty-message">
+                        Sin proveedores asignados
+                    </div>
+
+                    <div v-else class="proveedores-list">
+                        <div v-for="(item, index) in formData.proveedores" :key="index" class="proveedor-row">
+                            <select v-model="item.id_proveedor" required>
+                                <option :value="0" disabled>Seleccionar Proveedor</option>
+                                <option v-for="prov in maestrosStore.proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
+                                    {{ prov.nombre }}
+                                </option>
+                            </select>
+                            <input 
+                                v-model.number="item.precio_compra_sugerido" 
+                                type="number" 
+                                step="0.01" 
+                                placeholder="Precio S/."
+                                required
+                            />
+                            <button type="button" class="btn-icon btn-delete-row" @click="removeProveedorRow(index)">
+                                <Trash2 class="icon-sm" />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
 
@@ -419,5 +473,87 @@ const handleSearch = (query: string) => {
 .form-group textarea {
     resize: vertical;
     font-family: inherit;
+}
+
+/* Sección Proveedores */
+.form-section {
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.section-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-text:hover {
+    text-decoration: underline;
+}
+
+.proveedores-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.proveedor-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.proveedor-row select,
+.proveedor-row input {
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+}
+
+.btn-delete-row {
+    color: #9ca3af;
+    padding: 0.25rem;
+}
+
+.btn-delete-row:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.empty-message {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    padding: 1rem;
+    background-color: var(--bg-light);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border);
+}
+
+.icon-sm {
+    width: 1rem;
+    height: 1rem;
 }
 </style>
