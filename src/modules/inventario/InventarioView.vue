@@ -29,6 +29,7 @@ const kardexColumns: Column[] = [
     { key: 'fecha', label: 'Fecha/Hora', sortable: true },
     { key: 'tipo', label: 'Tipo Movimiento' },
     { key: 'producto', label: 'Producto' },
+    { key: 'medida', label: 'Medida' },
     { key: 'cantidad', label: 'Cantidad', align: 'center' },
     { key: 'usuario_registro', label: 'Usuario' },
     { key: 'codigo_viaje', label: 'Ref.' }
