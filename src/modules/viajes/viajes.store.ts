@@ -42,9 +42,11 @@ export const useViajesStore = defineStore('viajes', () => {
 
             if (response && response.data) {
                 viajes.value = response.data;
-                if (response.page) pagination.value.page = response.page;
-                if (response.total) pagination.value.total = response.total;
-                if (response.totalPages) pagination.value.totalPages = response.totalPages;
+                if (response.pagination) {
+                    pagination.value.page = response.pagination.page;
+                    pagination.value.total = response.pagination.total;
+                    pagination.value.totalPages = response.pagination.totalPages;
+                }
             } else if (Array.isArray(response)) {
                 viajes.value = response;
             } else {

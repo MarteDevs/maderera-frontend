@@ -143,7 +143,11 @@ const handleDelete = async () => {
 };
 
 const handleSearch = (query: string) => {
-    maestrosStore.fetchProductos({ search: query });
+    maestrosStore.fetchProductos({ search: query, page: 1 });
+};
+
+const handlePageChange = (page: number) => {
+    maestrosStore.setProductosPage(page);
 };
 </script>
 
@@ -157,6 +161,11 @@ const handleSearch = (query: string) => {
             search-placeholder="Buscar productos..."
             empty-title="Sin productos"
             empty-message="No hay productos registrados en el sistema"
+            :current-page="maestrosStore.productosPagination.page"
+            :total-pages="maestrosStore.productosPagination.totalPages"
+            :total="maestrosStore.productosPagination.total"
+            :page-size="maestrosStore.productosPagination.limit"
+            @page-change="handlePageChange"
             @search="handleSearch"
         >
             <!-- Botón crear en toolbar -->

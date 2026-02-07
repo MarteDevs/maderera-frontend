@@ -88,12 +88,18 @@ const handleDelete = async () => {
     <div class="minas-view">
         <DataTable
             :columns="columns"
-            :data="maestrosStore.minasActivas"
+            :data="maestrosStore.minas"
             :loading="maestrosStore.minasLoading"
             searchable
             search-placeholder="Buscar minas..."
             empty-title="Sin minas"
             empty-message="No hay minas registradas"
+            :current-page="maestrosStore.minasPagination.page"
+            :total-pages="maestrosStore.minasPagination.totalPages"
+            :total="maestrosStore.minasPagination.total"
+            :page-size="maestrosStore.minasPagination.limit"
+            @page-change="maestrosStore.setMinasPage"
+            @search="(q) => maestrosStore.fetchMinas({ search: q, page: 1 })"
         >
             <template #toolbar-actions>
                 <button class="btn btn-primary" @click="openCreateModal">

@@ -88,12 +88,18 @@ const handleDelete = async () => {
     <div class="proveedores-view">
         <DataTable
             :columns="columns"
-            :data="maestrosStore.proveedoresActivos"
+            :data="maestrosStore.proveedores"
             :loading="maestrosStore.proveedoresLoading"
             searchable
             search-placeholder="Buscar proveedores..."
             empty-title="Sin proveedores"
             empty-message="No hay proveedores registrados"
+            :current-page="maestrosStore.proveedoresPagination.page"
+            :total-pages="maestrosStore.proveedoresPagination.totalPages"
+            :total="maestrosStore.proveedoresPagination.total"
+            :page-size="maestrosStore.proveedoresPagination.limit"
+            @page-change="maestrosStore.setProveedoresPage"
+            @search="(q) => maestrosStore.fetchProveedores({ search: q, page: 1 })"
         >
             <template #toolbar-actions>
                 <button class="btn btn-primary" @click="openCreateModal">

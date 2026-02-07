@@ -24,17 +24,32 @@ export const useMaestrosStore = defineStore('maestros', {
     state: () => ({
         // Productos
         productos: [] as Producto[],
-        productosTotal: 0,
+        productosPagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0
+        },
         productosLoading: false,
 
         // Proveedores
         proveedores: [] as Proveedor[],
-        proveedoresTotal: 0,
+        proveedoresPagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0
+        },
         proveedoresLoading: false,
 
         // Minas
         minas: [] as Mina[],
-        minasTotal: 0,
+        minasPagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0
+        },
         minasLoading: false,
 
         // Supervisores
@@ -89,15 +104,26 @@ export const useMaestrosStore = defineStore('maestros', {
         // PRODUCTOS
         // ============================================
 
-        async fetchProductos(params?: { page?: number; limit?: number; search?: string }) {
+        async fetchProductos(params: { page?: number; limit?: number; search?: string } = {}) {
             this.productosLoading = true;
             this.error = null;
             try {
-                console.log('🔄 Store: Llamando a productosService.getAll...');
-                const response = await productosService.getAll(params);
+                // Use default pagination if not provided
+                const query = {
+                    page: params.page || this.productosPagination.page,
+                    limit: params.limit || this.productosPagination.limit,
+                    search: params.search
+                };
+
+                console.log('🔄 Store: Llamando a productosService.getAll...', query);
+                const response = await productosService.getAll(query);
                 console.log('📊 Store: Respuesta recibida:', response);
+
                 this.productos = response.data;
-                this.productosTotal = response.total;
+                if (response.pagination) {
+                    this.productosPagination = response.pagination;
+                }
+
                 console.log('✅ Store: Productos guardados:', this.productos.length);
             } catch (error: any) {
                 console.error('❌ Store: Error al cargar productos:', error);
@@ -108,13 +134,17 @@ export const useMaestrosStore = defineStore('maestros', {
             }
         },
 
+        setProductosPage(page: number) {
+            this.productosPagination.page = page;
+            this.fetchProductos({ page });
+        },
+
         async createProducto(data: Partial<Producto>) {
             this.productosLoading = true;
             this.error = null;
             try {
                 const producto = await productosService.create(data);
-                this.productos.unshift(producto);
-                this.productosTotal++;
+                await this.fetchProductos(); // Refresh list to respect pagination/sorting
                 return producto;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al crear producto';
@@ -129,10 +159,8 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 const producto = await productosService.update(id, data);
-                const index = this.productos.findIndex((p) => p.id_producto === id);
-                if (index !== -1) {
-                    this.productos[index] = producto;
-                }
+                // Refresh list to ensure data consistency
+                await this.fetchProductos();
                 return producto;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al actualizar producto';
@@ -147,11 +175,7 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 await productosService.delete(id);
-                const index = this.productos.findIndex((p) => p.id_producto === id);
-                if (index !== -1) {
-                    this.productos.splice(index, 1);
-                    this.productosTotal--;
-                }
+                await this.fetchProductos(); // Refresh
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al eliminar producto';
                 throw error;
@@ -164,13 +188,21 @@ export const useMaestrosStore = defineStore('maestros', {
         // PROVEEDORES
         // ============================================
 
-        async fetchProveedores(params?: { page?: number; limit?: number }) {
+        async fetchProveedores(params: { page?: number; limit?: number; search?: string } = {}) {
             this.proveedoresLoading = true;
             this.error = null;
             try {
-                const response = await proveedoresService.getAll(params);
+                const query = {
+                    page: params.page || this.proveedoresPagination.page,
+                    limit: params.limit || this.proveedoresPagination.limit,
+                    search: params.search
+                };
+
+                const response = await proveedoresService.getAll(query);
                 this.proveedores = response.data;
-                this.proveedoresTotal = response.total;
+                if (response.pagination) {
+                    this.proveedoresPagination = response.pagination;
+                }
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al cargar proveedores';
                 throw error;
@@ -179,13 +211,17 @@ export const useMaestrosStore = defineStore('maestros', {
             }
         },
 
+        setProveedoresPage(page: number) {
+            this.proveedoresPagination.page = page;
+            this.fetchProveedores({ page });
+        },
+
         async createProveedor(data: Partial<Proveedor>) {
             this.proveedoresLoading = true;
             this.error = null;
             try {
                 const proveedor = await proveedoresService.create(data);
-                this.proveedores.unshift(proveedor);
-                this.proveedoresTotal++;
+                await this.fetchProveedores();
                 return proveedor;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al crear proveedor';
@@ -200,10 +236,7 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 const proveedor = await proveedoresService.update(id, data);
-                const index = this.proveedores.findIndex((p) => p.id_proveedor === id);
-                if (index !== -1) {
-                    this.proveedores[index] = proveedor;
-                }
+                await this.fetchProveedores();
                 return proveedor;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al actualizar proveedor';
@@ -218,11 +251,7 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 await proveedoresService.delete(id);
-                const index = this.proveedores.findIndex((p) => p.id_proveedor === id);
-                if (index !== -1) {
-                    this.proveedores.splice(index, 1);
-                    this.proveedoresTotal--;
-                }
+                await this.fetchProveedores();
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al eliminar proveedor';
                 throw error;
@@ -235,13 +264,21 @@ export const useMaestrosStore = defineStore('maestros', {
         // MINAS
         // ============================================
 
-        async fetchMinas(params?: { page?: number; limit?: number }) {
+        async fetchMinas(params: { page?: number; limit?: number; search?: string } = {}) {
             this.minasLoading = true;
             this.error = null;
             try {
-                const response = await minasService.getAll(params);
+                const query = {
+                    page: params.page || this.minasPagination.page,
+                    limit: params.limit || this.minasPagination.limit,
+                    search: params.search
+                };
+
+                const response = await minasService.getAll(query);
                 this.minas = response.data;
-                this.minasTotal = response.total;
+                if (response.pagination) {
+                    this.minasPagination = response.pagination;
+                }
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al cargar minas';
                 throw error;
@@ -250,13 +287,17 @@ export const useMaestrosStore = defineStore('maestros', {
             }
         },
 
+        setMinasPage(page: number) {
+            this.minasPagination.page = page;
+            this.fetchMinas({ page });
+        },
+
         async createMina(data: Partial<Mina>) {
             this.minasLoading = true;
             this.error = null;
             try {
                 const mina = await minasService.create(data);
-                this.minas.unshift(mina);
-                this.minasTotal++;
+                await this.fetchMinas();
                 return mina;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al crear mina';
@@ -271,10 +312,7 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 const mina = await minasService.update(id, data);
-                const index = this.minas.findIndex((m) => m.id_mina === id);
-                if (index !== -1) {
-                    this.minas[index] = mina;
-                }
+                await this.fetchMinas();
                 return mina;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al actualizar mina';
@@ -289,11 +327,7 @@ export const useMaestrosStore = defineStore('maestros', {
             this.error = null;
             try {
                 await minasService.delete(id);
-                const index = this.minas.findIndex((m) => m.id_mina === id);
-                if (index !== -1) {
-                    this.minas.splice(index, 1);
-                    this.minasTotal--;
-                }
+                await this.fetchMinas();
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al eliminar mina';
                 throw error;
@@ -306,13 +340,24 @@ export const useMaestrosStore = defineStore('maestros', {
         // SUPERVISORES
         // ============================================
 
-        async fetchSupervisores(params?: { page?: number; limit?: number }) {
+        async fetchSupervisores(params: { page?: number; limit?: number; search?: string } = {}) {
             this.supervisoresLoading = true;
             this.error = null;
             try {
-                const response = await supervisoresService.getAll(params);
+                const query = {
+                    page: params.page || 1,
+                    limit: params.limit || 10,
+                    search: params.search
+                };
+
+                const response = await supervisoresService.getAll(query);
                 this.supervisores = response.data;
-                this.supervisoresTotal = response.total;
+                // Asumimos que supervisores también tendrá paginación pronto o ya la tiene
+                if (response.pagination) {
+                    // Si decidimos agregar supervisoresPagination al state, aquí lo actualizaríamos
+                    // Por ahora solo evitamos el error de acceso a propiedad inexistente
+                    this.supervisoresTotal = response.pagination.total;
+                }
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al cargar supervisores';
                 throw error;
