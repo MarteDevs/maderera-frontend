@@ -53,13 +53,12 @@ export const useInventarioStore = defineStore('inventario', () => {
 
             const response = await inventarioService.getStock(params);
 
-            // Stock response might be paginated or array depending on service implementation
+            // Stock response structure: { data: [...], pagination: { ... } }
             if (response && response.data) {
                 stock.value = response.data;
-                if (response.page) stockPagination.value.page = response.page;
-                if (response.total) stockPagination.value.total = response.total; // Necesita que backend devuelva total
-                // Si backend no devuelve paginación completa para stock (solo limit/offset sin count), 
-                // asumimos que si devolvió data < limit, es la última página.
+                if (response.pagination) {
+                    stockPagination.value = { ...stockPagination.value, ...response.pagination };
+                }
             } else if (Array.isArray(response)) {
                 stock.value = response;
             } else {
