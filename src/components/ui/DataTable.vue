@@ -193,19 +193,20 @@ const paginationInfo = computed(() => {
 .table-toolbar {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     padding: 1.25rem;
     border-bottom: 1px solid var(--border);
     gap: 1rem;
 }
 
 .toolbar-search {
-    flex: 0 1 auto;
-    min-width: 250px;
+    flex: 1 1 100%;
+    width: 100%;
+    max-width: 500px;
 }
 
 .toolbar-filters {
-    flex: 1 1 auto;
+    flex: 1 1 100%;
     display: flex;
     align-items: center;
     gap: 1rem;

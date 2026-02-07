@@ -79,32 +79,40 @@ onMounted(() => {
         >
             <!-- Filtros en el toolbar -->
             <template #toolbar-filters>
-                <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
-                    <option value="">Todos los Proveedores</option>
-                    <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
-                        {{ prov.nombre }}
-                    </option>
-                </select>
+                <div class="filter-item">
+                    <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
+                        <option value="">Todos los Proveedores</option>
+                        <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
+                            {{ prov.nombre }}
+                        </option>
+                    </select>
+                </div>
 
-                <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
-                    <option value="">Todas las Minas</option>
-                    <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
-                        {{ mina.nombre }}
-                    </option>
-                </select>
+                <div class="filter-item">
+                    <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
+                        <option value="">Todas las Minas</option>
+                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                            {{ mina.nombre }}
+                        </option>
+                    </select>
+                </div>
 
-                <select v-model="filters.estado" @change="applyFilters" class="filter-select">
-                    <option value="">Todos los Estados</option>
-                    <option value="PENDIENTE">PENDIENTE</option>
-                    <option value="PARCIAL">PARCIAL</option>
-                    <option value="COMPLETADO">COMPLETADO</option>
-                    <option value="ANULADO">ANULADO</option>
-                </select>
+                <div class="filter-item">
+                    <select v-model="filters.estado" @change="applyFilters" class="filter-select">
+                        <option value="">Todos los Estados</option>
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="PARCIAL">PARCIAL</option>
+                        <option value="COMPLETADO">COMPLETADO</option>
+                        <option value="ANULADO">ANULADO</option>
+                    </select>
+                </div>
 
-                <div class="date-range">
-                    <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" />
-                    <span>-</span>
-                    <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" />
+                <div class="filter-item">
+                    <div class="date-range">
+                        <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" />
+                        <span>-</span>
+                        <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" />
+                    </div>
                 </div>
             </template>
 
@@ -266,6 +274,10 @@ onMounted(() => {
 }
 
 /* Filters in toolbar */
+.filter-item {
+    margin-right: 1.5rem;
+}
+
 .filter-select {
     padding: 0.625rem 0.875rem;
     border: 1px solid var(--border);
