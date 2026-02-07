@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute } from 'vue-router';
 import { 
     LayoutDashboard, 
     FileText, 
@@ -9,6 +9,8 @@ import {
     Settings
 } from 'lucide-vue-next';
 
+const route = useRoute();
+
 const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Requerimientos', path: '/requirements', icon: FileText },
@@ -16,6 +18,13 @@ const menuItems = [
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
 ];
+
+const isActive = (path: string) => {
+    if (path === '/') {
+        return route.path === '/';
+    }
+    return route.path.startsWith(path);
+};
 </script>
 
 <template>
@@ -27,7 +36,11 @@ const menuItems = [
         <nav class="sidebar-nav">
             <ul>
                 <li v-for="item in menuItems" :key="item.path">
-                    <RouterLink :to="item.path" class="nav-link">
+                    <RouterLink 
+                        :to="item.path" 
+                        class="nav-link"
+                        :class="{ 'router-link-active': isActive(item.path) }"
+                    >
                         <component :is="item.icon" class="icon" />
                         <span>{{ item.label }}</span>
                     </RouterLink>

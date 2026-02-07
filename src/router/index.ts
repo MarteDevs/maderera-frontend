@@ -10,7 +10,7 @@ const routes = [
         path: '/login',
         name: 'Login',
         component: LoginView,
-        meta: { guest: true }
+        meta: { guest: true, title: 'Login' }
     },
     {
         path: '/',
@@ -20,37 +20,50 @@ const routes = [
             {
                 path: '',
                 name: 'Dashboard',
-                component: DashboardView
+                component: DashboardView,
+                meta: { title: 'Panel de Control' }
             },
             {
                 path: 'maestros',
                 name: 'Maestros',
-                component: MaestrosView
+                component: MaestrosView,
+                meta: { title: 'Maestros' }
             },
             {
                 path: 'requirements',
                 name: 'Requerimientos',
-                component: () => import('../modules/requerimientos/RequerimientosListView.vue')
+                component: () => import('../modules/requerimientos/RequerimientosListView.vue'),
+                meta: { title: 'Requerimientos' }
             },
             {
                 path: 'requirements/new',
                 name: 'NuevoRequerimiento',
-                component: () => import('../modules/requerimientos/RequerimientosForm.vue')
+                component: () => import('../modules/requerimientos/RequerimientosForm.vue'),
+                meta: { title: 'Nuevo Requerimiento' }
+            },
+            {
+                path: 'requirements/:id',
+                name: 'DetalleRequerimiento',
+                component: () => import('../modules/requerimientos/RequerimientosForm.vue'),
+                meta: { title: 'Editar Requerimiento' }
             },
             {
                 path: 'viajes',
                 name: 'Viajes',
-                component: () => import('../modules/viajes/ViajesListView.vue')
+                component: () => import('../modules/viajes/ViajesListView.vue'),
+                meta: { title: 'Viajes' }
             },
             {
                 path: 'viajes/new/:id_requerimiento',
                 name: 'NuevoViaje',
-                component: () => import('../modules/viajes/ViajesForm.vue')
+                component: () => import('../modules/viajes/ViajesForm.vue'),
+                meta: { title: 'Registrar Viaje' }
             },
             {
                 path: 'inventory',
                 name: 'Inventario',
-                component: () => import('../modules/inventario/InventarioView.vue')
+                component: () => import('../modules/inventario/InventarioView.vue'),
+                meta: { title: 'Inventario' }
             },
             // Future routes will go here
         ]

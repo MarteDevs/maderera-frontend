@@ -2,9 +2,14 @@
 import { useAuthStore } from '../../stores/auth.store';
 import { LogOut, User } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
+import { useRoute } from 'vue-router';
+import { computed } from 'vue';
 
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
+const route = useRoute();
+
+const pageTitle = computed(() => (route.meta.title as string) || 'Panel de Control');
 
 const handleLogout = () => {
     authStore.logout();
@@ -15,7 +20,7 @@ const handleLogout = () => {
     <header class="header">
         <div class="header-left">
             <!-- Placeholder for Breadcrumbs or Page Title -->
-            <h2 class="page-title">Panel de Control</h2>
+            <h2 class="page-title">{{ pageTitle }}</h2>
         </div>
 
         <div class="header-right">
