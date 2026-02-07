@@ -14,13 +14,12 @@ export interface MovimientoStock {
     fecha: string;
     tipo: 'ENTRADA' | 'SALIDA' | 'AJUSTE_POS' | 'AJUSTE_NEG' | 'DEVOLUCION' | 'AJUSTE_MANUAL';
     cantidad: number;
-    producto: {
-        nombre: string;
-        medida?: { descripcion: string };
-    };
+    producto: string;
+    medida?: string;
     observacion?: string;
-    usuario?: string;
-    referencia?: string; // Para mostrar #Req o #Viaje
+    usuario_registro?: string;
+    codigo_viaje?: string;
+    codigo_requerimiento?: string;
 }
 
 export interface AjusteStockInput {

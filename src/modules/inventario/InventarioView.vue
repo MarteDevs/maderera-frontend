@@ -28,10 +28,10 @@ const stockColumns: Column[] = [
 const kardexColumns: Column[] = [
     { key: 'fecha', label: 'Fecha/Hora', sortable: true },
     { key: 'tipo', label: 'Tipo Movimiento' },
-    { key: 'producto.nombre', label: 'Producto' },
+    { key: 'producto', label: 'Producto' },
     { key: 'cantidad', label: 'Cantidad', align: 'center' },
-    { key: 'usuario', label: 'Usuario' },
-    { key: 'referencia', label: 'Ref.' } // ID Viaje o Req
+    { key: 'usuario_registro', label: 'Usuario' },
+    { key: 'codigo_viaje', label: 'Ref.' }
 ];
 
 const loadData = () => {
