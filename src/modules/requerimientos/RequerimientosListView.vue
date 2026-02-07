@@ -115,7 +115,7 @@ onMounted(() => {
                         class="btn-icon" 
                         title="Registrar Ingreso (Viaje)" 
                         @click="router.push(`/viajes/new/${row.id_requerimiento}`)"
-                        v-if="row.estado !== 'ANULADO'"
+                        v-if="row.estado !== 'ANULADO' && row.estado !== 'COMPLETADO'"
                     >
                         <Truck class="icon-sm" />
                     </button>
