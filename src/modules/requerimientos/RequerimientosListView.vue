@@ -187,8 +187,8 @@ onMounted(() => {
                                             <div class="flex-center">
                                                 <FileText class="icon-xs text-gray" />
                                                 {{ item.producto?.nombre }}
-                                                <span class="text-xs text-gray" v-if="item.producto?.medida">
-                                                    ({{ item.producto.medida.descripcion }})
+                                                <span class="text-xs text-gray" v-if="item.producto?.medidas || item.producto?.medida">
+                                                    ({{ item.producto.medidas?.descripcion || item.producto.medida?.descripcion }})
                                                 </span>
                                             </div>
                                         </td>

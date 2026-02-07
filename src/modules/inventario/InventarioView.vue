@@ -16,10 +16,11 @@ const activeTab = ref<'stock' | 'kardex'>('stock');
 const searchQuery = ref('');
 
 // Columnas Stock
+// Columnas Stock
 const stockColumns: Column[] = [
-    { key: 'nombre', label: 'Producto', sortable: true },
-    { key: 'medida.descripcion', label: 'Medida' },
-    { key: 'clasificacion.nombre', label: 'Clasificación' },
+    { key: 'producto', label: 'Producto', sortable: true },
+    { key: 'medida', label: 'Medida' },
+    { key: 'clasificacion', label: 'Clasificación' },
     { key: 'stock_actual', label: 'Stock Actual', sortable: true, align: 'center' }
 ];
 

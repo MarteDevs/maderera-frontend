@@ -38,7 +38,8 @@ const loadRequerimiento = async () => {
         formData.value.detalles = req.detalles.map((d: any) => ({
             id_detalle_requerimiento: d.id_detalle,
             producto_nombre: d.producto?.nombre,
-            unidad_medida: d.unidad_medida,
+            // Intentar obtener medida de la relación anidada
+            unidad_medida: d.producto?.medidas?.descripcion || d.producto?.medida?.descripcion || 'UNIDAD',
             cantidad_solicitada: d.cantidad_solicitada,
             cantidad_pendiente: d.cantidad_solicitada - (d.cantidad_entregada || 0),
             cantidad_recibida: 0,
@@ -181,7 +182,10 @@ onMounted(() => {
                                 <td>
                                     <div class="product-info">
                                         <Truck class="icon-sm text-gray" />
-                                        <span>{{ detalle.producto_nombre }}</span>
+                                        <div class="flex-col">
+                                            <span>{{ detalle.producto_nombre }}</span>
+                                            <span class="text-xs text-gray">{{ detalle.unidad_medida }}</span>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="text-center">{{ detalle.cantidad_solicitada }}</td>
@@ -408,5 +412,10 @@ onMounted(() => {
     text-align: center;
     padding: 3rem;
     color: var(--text-light);
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
 }
 </style>
