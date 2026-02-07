@@ -84,10 +84,9 @@ const save = async () => {
             }))
         };
 
-        const success = await store.createViaje(payload);
+    const success = await store.createViaje(payload);
         if (success) {
-            alert('Viaje registrado correctamente');
-            router.push('/viajes');
+            showSuccessModal.value = true;
         } else {
             alert('Error al guardar el viaje');
         }
@@ -99,6 +98,11 @@ const save = async () => {
     }
 };
 
+const closeSuccessModal = () => {
+    showSuccessModal.value = false;
+    router.push('/viajes');
+};
+
 onMounted(() => {
     if (!idRequerimiento) {
         alert('ID de requerimiento no válido');
@@ -107,6 +111,9 @@ onMounted(() => {
     }
     loadRequerimiento();
 });
+
+// Modal state
+const showSuccessModal = ref(false);
 </script>
 
 <template>
@@ -196,11 +203,12 @@ onMounted(() => {
                                         type="number" 
                                         min="0" 
                                         class="form-control text-center"
-                                        :class="{ 'bg-blue-50': detalle.cantidad_recibida > 0 }"
+                                        :class="{ 'bg-blue-50': detalle.cantidad_recibida > 0, 'bg-green-50': detalle.cantidad_pendiente <= 0 }"
+                                        :disabled="detalle.cantidad_pendiente <= 0"
                                     />
                                 </td>
                                 <td>
-                                    <select v-model="detalle.estado_entrega" class="form-control dense">
+                                    <select v-model="detalle.estado_entrega" class="form-control dense" :disabled="detalle.cantidad_pendiente <= 0">
                                         <option value="OK">Conforme (OK)</option>
                                         <option value="PARCIAL">Parcial</option>
                                         <option value="MUESTRA">Muestra</option>
@@ -209,11 +217,27 @@ onMounted(() => {
                                     </select>
                                 </td>
                                 <td>
-                                    <input v-model="detalle.observacion" type="text" class="form-control dense" placeholder="..." />
+                                    <input v-model="detalle.observacion" type="text" class="form-control dense" placeholder="..." :disabled="detalle.cantidad_pendiente <= 0" />
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div v-if="showSuccessModal" class="modal-overlay">
+            <div class="modal-content success-modal">
+                <div class="success-icon-wrapper">
+                    <Truck class="icon-lg text-success" />
+                </div>
+                <h3>¡Viaje Registrado!</h3>
+                <p>La recepción e ingreso a almacén se han procesado correctamente.</p>
+                <div class="modal-actions">
+                    <button class="btn-primary full-width-btn" @click="closeSuccessModal">
+                        Continuar
+                    </button>
                 </div>
             </div>
         </div>
@@ -372,7 +396,15 @@ onMounted(() => {
 .text-center { text-align: center; }
 .font-bold { font-weight: 600; }
 .text-gray { color: var(--text-light); }
-.bg-blue-50 { background-color: #eff6ff; }
+.bg-blue-50 {
+    background-color: #eff6ff !important;
+    color: var(--plugin-text);
+}
+.bg-green-50 {
+    background-color: #f0fdf4 !important;
+    cursor: not-allowed;
+    color: #166534 !important;
+}
 
 .btn-primary, .btn-secondary {
     display: flex;
@@ -407,6 +439,7 @@ onMounted(() => {
 
 .icon { width: 1.25rem; height: 1.25rem; }
 .icon-sm { width: 1rem; height: 1rem; }
+.icon-lg { width: 3rem; height: 3rem; }
 
 .loading-state {
     text-align: center;
@@ -417,5 +450,56 @@ onMounted(() => {
 .flex-col {
     display: flex;
     flex-direction: column;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.success-modal {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+}
+
+.success-icon-wrapper {
+    margin-bottom: 1rem;
+    display: inline-flex;
+    padding: 1rem;
+    border-radius: 50%;
+    background-color: #dcfce7;
+}
+
+.text-success { color: #166534; }
+
+.success-modal h3 {
+    margin: 0 0 0.5rem 0;
+    color: var(--text);
+    font-size: 1.25rem;
+}
+
+.success-modal p {
+    color: var(--text-light);
+    margin: 0 0 1.5rem 0;
+}
+
+.full-width-btn {
+    width: 100%;
+    justify-content: center;
 }
 </style>
