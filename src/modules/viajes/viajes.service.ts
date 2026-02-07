@@ -8,6 +8,7 @@ export interface ViajeDetalle {
     observacion?: string;
     // relaciones
     producto_nombre?: string;
+    unidad_medida?: string;
     cantidad_solicitada?: number;
 }
 
@@ -69,7 +70,8 @@ function mapViajeFromBackend(v: any): any {
         // Mapear detalles para incluir nombre de producto
         detalles: v.viaje_detalles?.map((d: any) => ({
             ...d,
-            producto_nombre: d.requerimiento_detalles?.productos?.nombre || `Producto #${d.id_detalle_requerimiento}`
+            producto_nombre: d.requerimiento_detalles?.productos?.nombre || `Producto #${d.id_detalle_requerimiento}`,
+            unidad_medida: d.requerimiento_detalles?.productos?.medidas?.descripcion || d.requerimiento_detalles?.productos?.medida?.descripcion || 'UNIDAD'
         })) || []
     };
 }

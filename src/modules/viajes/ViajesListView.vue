@@ -140,7 +140,12 @@ onMounted(() => {
                                         <td>
                                             <div class="flex-center">
                                                 <Truck class="icon-xs text-gray" />
-                                                {{ item.producto_nombre }}
+                                                <div class="flex-col">
+                                                    <span>{{ item.producto_nombre }}</span>
+                                                    <span class="text-xs text-gray" v-if="item.unidad_medida">
+                                                        ({{ item.unidad_medida }})
+                                                    </span>
+                                                </div>
                                             </div>
                                         </td>
                                         <td class="text-right bold">{{ item.cantidad_recibida }}</td>
@@ -388,4 +393,5 @@ onMounted(() => {
 .text-right { text-align: right; }
 .flex-center { display: flex; align-items: center; gap: 0.5rem; }
 .bold { font-weight: 600; }
+.flex-col { display: flex; flex-direction: column; }
 </style>
