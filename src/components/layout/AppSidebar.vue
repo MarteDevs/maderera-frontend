@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
+import { computed } from 'vue';
 import { 
     LayoutDashboard, 
     FileText, 
     Truck, 
     Package, 
-    Database, 
+    Database,
+    Users,
     Settings
 } from 'lucide-vue-next';
 
 const route = useRoute();
+
+// Get user from localStorage
+const user = computed(() => {
+    const userStr = localStorage.getItem('user');
+    return userStr ? JSON.parse(userStr) : null;
+});
+
+const isAdmin = computed(() => user.value?.rol === 'ADMIN');
 
 const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -17,6 +27,10 @@ const menuItems = [
     { label: 'Viajes', path: '/viajes', icon: Truck },
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
+];
+
+const adminMenuItems = [
+    { label: 'Usuarios', path: '/usuarios', icon: Users, adminOnly: true },
 ];
 
 const isActive = (path: string) => {
@@ -45,6 +59,23 @@ const isActive = (path: string) => {
                         <span>{{ item.label }}</span>
                     </RouterLink>
                 </li>
+                
+                <!-- Admin Section -->
+                <template v-if="isAdmin">
+                    <li class="section-divider">
+                        <span>Administración</span>
+                    </li>
+                    <li v-for="item in adminMenuItems" :key="item.path">
+                        <RouterLink 
+                            :to="item.path" 
+                            class="nav-link"
+                            :class="{ 'router-link-active': isActive(item.path) }"
+                        >
+                            <component :is="item.icon" class="icon" />
+                            <span>{{ item.label }}</span>
+                        </RouterLink>
+                    </li>
+                </template>
             </ul>
         </nav>
 
@@ -154,5 +185,19 @@ const isActive = (path: string) => {
     padding: 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     background: rgba(0, 0, 0, 0.1);
+}
+
+.section-divider {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0 1.25rem;
+}
+
+.section-divider span {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.4);
 }
 </style>

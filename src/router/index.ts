@@ -65,6 +65,12 @@ const routes = [
                 component: () => import('../modules/inventario/InventarioView.vue'),
                 meta: { title: 'Inventario' }
             },
+            {
+                path: 'usuarios',
+                name: 'Usuarios',
+                component: () => import('../modules/usuarios/UsuariosListView.vue'),
+                meta: { title: 'Gestión de Usuarios', requiresRole: 'ADMIN' }
+            },
             // Future routes will go here
         ]
     },
