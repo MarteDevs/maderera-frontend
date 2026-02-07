@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from './requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Search, Truck, X, FileText } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -42,8 +42,7 @@ const applyFilters = () => {
     store.fetchRequerimientos();
 };
 
-const handleSearch = (e: Event) => {
-    const value = (e.target as HTMLInputElement).value;
+const handleSearch = (value: string) => {
     store.setFilters({ search: value });
 };
 
@@ -61,77 +60,61 @@ onMounted(() => {
 
 <template>
     <div class="requerimientos-view">
-        <header class="page-header">
-            <div class="header-content">
-                <div>
-                    <h1 class="page-title">Requerimientos</h1>
-                    <p class="page-description">Gestiona las solicitudes de compra de madera</p>
+        <h1 class="view-title">Requerimientos</h1>
+        <p class="view-description">Gestiona las solicitudes de compra de madera</p>
+
+        <!-- Tabla con Toolbar Integrado -->
+        <DataTable 
+            :columns="columns" 
+            :data="requerimientos" 
+            :loading="loading"
+            searchable
+            search-placeholder="Buscar por código..."
+            :current-page="pagination.page"
+            :total-pages="pagination.totalPages"
+            :total="pagination.total"
+            :page-size="pagination.limit"
+            @search="handleSearch"
+            @page-change="handlePageChange"
+        >
+            <!-- Filtros en el toolbar -->
+            <template #toolbar-filters>
+                <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
+                    <option value="">Todos los Proveedores</option>
+                    <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
+                        {{ prov.nombre }}
+                    </option>
+                </select>
+
+                <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
+                    <option value="">Todas las Minas</option>
+                    <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                        {{ mina.nombre }}
+                    </option>
+                </select>
+
+                <select v-model="filters.estado" @change="applyFilters" class="filter-select">
+                    <option value="">Todos los Estados</option>
+                    <option value="PENDIENTE">PENDIENTE</option>
+                    <option value="PARCIAL">PARCIAL</option>
+                    <option value="COMPLETADO">COMPLETADO</option>
+                    <option value="ANULADO">ANULADO</option>
+                </select>
+
+                <div class="date-range">
+                    <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" />
+                    <span>-</span>
+                    <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" />
                 </div>
-                <button class="btn-primary" @click="router.push('/requirements/new')">
+            </template>
+
+            <!-- Botón de acción principal -->
+            <template #toolbar-actions>
+                <button class="btn btn-primary" @click="router.push('/requirements/new')">
                     <Plus class="icon" />
                     Nuevo Requerimiento
                 </button>
-            </div>
-        </header>
-
-        <div class="content-container">
-            <!-- Filtros y Búsqueda -->
-            <div class="filters-bar">
-                <div class="filter-group">
-                    <div class="search-box">
-                        <Search class="search-icon" />
-                        <input 
-                            :value="filters.search"
-                            @input="handleSearch"
-                            type="text" 
-                            placeholder="Buscar por código..." 
-                            class="search-input"
-                        />
-                    </div>
-                </div>
-                
-                <div class="filter-group">
-                    <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
-                        <option value="">Todos los Proveedores</option>
-                        <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
-                            {{ prov.nombre }}
-                        </option>
-                    </select>
-
-                    <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
-                        <option value="">Todas las Minas</option>
-                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
-                            {{ mina.nombre }}
-                        </option>
-                    </select>
-
-                    <select v-model="filters.estado" @change="applyFilters" class="filter-select">
-                        <option value="">Todos los Estados</option>
-                        <option value="PENDIENTE">PENDIENTE</option>
-                        <option value="PARCIAL">PARCIAL</option>
-                        <option value="COMPLETADO">COMPLETADO</option>
-                        <option value="ANULADO">ANULADO</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" title="Fecha Inicio" />
-                    <span class="text-gray">-</span>
-                    <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" title="Fecha Fin" />
-                </div>
-            </div>
-
-            <!-- Tabla -->
-            <DataTable 
-                :columns="columns" 
-                :data="requerimientos" 
-                :loading="loading"
-                :current-page="pagination.page"
-                :total-pages="pagination.totalPages"
-                :total="pagination.total"
-                :page-size="pagination.limit"
-                @page-change="handlePageChange"
-            >
+            </template>
                 <template #cell-codigo="{ value }">
                     <span class="font-medium text-primary">{{ value }}</span>
                 </template>
@@ -263,99 +246,74 @@ onMounted(() => {
                 </footer>
             </div>
         </div>
-    </div>
 </template>
 
 <style scoped>
 .requerimientos-view {
-    width: 100%;
+    padding: 2rem;
 }
 
-.page-header {
-    margin-bottom: 2rem;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.page-title {
+.view-title {
     font-size: 1.875rem;
     font-weight: 700;
     color: var(--text);
-    margin: 0;
+    margin: 0 0 0.5rem 0;
 }
 
-.page-description {
+.view-description {
     color: var(--text-light);
-    margin-top: 0.5rem;
+    margin: 0 0 2rem 0;
 }
 
-.content-container {
-    background: white;
-    padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
-}
-
-.filters-bar {
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
-}
-
-.search-box {
-    position: relative;
-    max-width: 300px;
-}
-
-.search-icon {
-    position: absolute;
-    left: 0.75rem;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1.25rem;
-    height: 1.25rem;
-    color: var(--text-light);
-}
-
-.search-input {
-    width: 100%;
-    padding: 0.625rem 1rem 0.625rem 2.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: 0.875rem;
-}
-
-.filter-group {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
+/* Filters in toolbar */
 .filter-select {
-    padding: 0.625rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background-color: white;
     font-size: 0.875rem;
     color: var(--text);
-    min-width: 150px;
+    min-width: 160px;
+    max-width: 200px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-select:hover {
+    border-color: var(--text-light);
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
 }
 
 .filter-date {
-    padding: 0.625rem;
+    padding: 0.625rem 0.875rem;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background-color: white;
     font-size: 0.875rem;
     color: var(--text);
+    min-width: 140px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-date:hover {
+    border-color: var(--text-light);
+}
+
+.filter-date:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
+}
+
+.date-range {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 /* Status Badges */

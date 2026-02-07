@@ -73,18 +73,30 @@ const paginationInfo = computed(() => {
 
 <template>
     <div class="data-table">
-        <!-- Search Bar -->
-        <div v-if="searchable" class="table-toolbar">
-            <div class="search-box">
-                <Search class="search-icon" />
-                <input
-                    type="text"
-                    class="search-input"
-                    :placeholder="searchPlaceholder"
-                    @input="handleSearch"
-                />
+        <!-- Enhanced Toolbar with 3 zones: Search | Filters | Actions -->
+        <div v-if="searchable || $slots['toolbar-filters'] || $slots['toolbar-actions']" class="table-toolbar">
+            <!-- Left: Search -->
+            <div v-if="searchable" class="toolbar-search">
+                <div class="search-box">
+                    <Search class="search-icon" />
+                    <input
+                        type="text"
+                        class="search-input"
+                        :placeholder="searchPlaceholder"
+                        @input="handleSearch"
+                    />
+                </div>
             </div>
-            <slot name="toolbar-actions"></slot>
+
+            <!-- Center: Custom Filters -->
+            <div v-if="$slots['toolbar-filters']" class="toolbar-filters">
+                <slot name="toolbar-filters"></slot>
+            </div>
+
+            <!-- Right: Actions -->
+            <div v-if="$slots['toolbar-actions']" class="toolbar-actions">
+                <slot name="toolbar-actions"></slot>
+            </div>
         </div>
 
         <!-- Table -->
@@ -180,17 +192,52 @@ const paginationInfo = computed(() => {
 
 .table-toolbar {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
     padding: 1.25rem;
     border-bottom: 1px solid var(--border);
     gap: 1rem;
 }
 
+.toolbar-search {
+    flex: 0 1 auto;
+    min-width: 250px;
+}
+
+.toolbar-filters {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.toolbar-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+/* Responsive: stack on small screens */
+@media (max-width: 768px) {
+    .table-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .toolbar-search,
+    .toolbar-filters,
+    .toolbar-actions {
+        width: 100%;
+        margin-left: 0;
+    }
+}
+
 .search-box {
     position: relative;
-    flex: 1;
-    max-width: 400px;
+    width: 100%;
 }
 
 .search-icon {
