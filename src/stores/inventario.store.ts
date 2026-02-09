@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { inventarioService } from '../services';
+import { useToast } from '../composables/useToast';
 import type {
     Stock,
     MovimientoStock,
@@ -141,9 +142,13 @@ export const useInventarioStore = defineStore('inventario', {
                 // Recargar stock y kardex
                 await Promise.all([this.fetchStock(), this.fetchKardex()]);
 
+                const toast = useToast();
+                toast.success('Stock ajustado exitosamente');
                 return movimiento;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al ajustar stock';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.stockLoading = false;

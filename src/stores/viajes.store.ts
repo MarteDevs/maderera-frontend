@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { viajesService } from '../services';
+import { useToast } from '../composables/useToast';
 import type { Viaje, CreateViajeInput } from '../types/models';
 
 // ============================================
@@ -113,9 +114,13 @@ export const useViajesStore = defineStore('viajes', {
                     await this.fetchViajes();
                 }
 
+                const toast = useToast();
+                toast.success('Viaje registrado exitosamente');
                 return result;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al registrar viaje';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;
@@ -158,9 +163,13 @@ export const useViajesStore = defineStore('viajes', {
                 if (this.currentViaje?.id_viaje === id) {
                     this.currentViaje = viaje;
                 }
+                const toast = useToast();
+                toast.success('Viaje actualizado exitosamente');
                 return viaje;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar viaje';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;
@@ -181,8 +190,12 @@ export const useViajesStore = defineStore('viajes', {
                     this.viajes.splice(index, 1);
                     this.pagination.total--;
                 }
+                const toast = useToast();
+                toast.success('Viaje eliminado exitosamente');
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al eliminar viaje';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;

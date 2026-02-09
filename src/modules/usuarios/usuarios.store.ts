@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { usuariosService, type Usuario, type CreateUsuarioInput, type UpdateUsuarioInput } from './usuarios.service';
+import { useToast } from '../../composables/useToast';
 
 export const useUsuariosStore = defineStore('usuarios', () => {
     const usuarios = ref<Usuario[]>([]);
@@ -52,8 +53,12 @@ export const useUsuariosStore = defineStore('usuarios', () => {
         try {
             await usuariosService.create(data);
             await fetchUsuarios(); // Refresh list
+            const toast = useToast();
+            toast.success('Usuario creado exitosamente');
         } catch (err: any) {
+            const toast = useToast();
             error.value = err.response?.data?.message || 'Error al crear usuario';
+            toast.error(error.value || 'Error desconocido');
             throw err;
         } finally {
             loading.value = false;
@@ -66,8 +71,12 @@ export const useUsuariosStore = defineStore('usuarios', () => {
         try {
             await usuariosService.update(id, data);
             await fetchUsuarios();
+            const toast = useToast();
+            toast.success('Usuario actualizado exitosamente');
         } catch (err: any) {
+            const toast = useToast();
             error.value = err.response?.data?.message || 'Error al actualizar usuario';
+            toast.error(error.value || 'Error desconocido');
             throw err;
         } finally {
             loading.value = false;
@@ -79,8 +88,12 @@ export const useUsuariosStore = defineStore('usuarios', () => {
         error.value = null;
         try {
             await usuariosService.changePassword(id, password);
+            const toast = useToast();
+            toast.success('Contraseña actualizada exitosamente');
         } catch (err: any) {
+            const toast = useToast();
             error.value = err.response?.data?.message || 'Error al cambiar contraseña';
+            toast.error(error.value || 'Error desconocido');
             throw err;
         } finally {
             loading.value = false;
@@ -97,8 +110,12 @@ export const useUsuariosStore = defineStore('usuarios', () => {
             if (user) {
                 user.activo = !user.activo;
             }
+            const toast = useToast();
+            toast.success('Estado de usuario actualizado');
         } catch (err: any) {
+            const toast = useToast();
             error.value = err.response?.data?.message || 'Error al cambiar estado de usuario';
+            toast.error(error.value || 'Error desconocido');
             throw err;
         } finally {
             loading.value = false;

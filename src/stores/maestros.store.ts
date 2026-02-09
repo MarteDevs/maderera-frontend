@@ -7,6 +7,7 @@ import {
     medidasService,
     clasificacionesService,
 } from '../services';
+import { useToast } from '../composables/useToast';
 import type {
     Producto,
     Proveedor,
@@ -145,9 +146,13 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 const producto = await productosService.create(data);
                 await this.fetchProductos(); // Refresh list to respect pagination/sorting
+                const toast = useToast();
+                toast.success('Producto creado exitosamente');
                 return producto;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al crear producto';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.productosLoading = false;
@@ -161,9 +166,13 @@ export const useMaestrosStore = defineStore('maestros', {
                 const producto = await productosService.update(id, data);
                 // Refresh list to ensure data consistency
                 await this.fetchProductos();
+                const toast = useToast();
+                toast.success('Producto actualizado exitosamente');
                 return producto;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar producto';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.productosLoading = false;
@@ -176,8 +185,12 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 await productosService.delete(id);
                 await this.fetchProductos(); // Refresh
+                const toast = useToast();
+                toast.success('Producto eliminado exitosamente');
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al eliminar producto';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.productosLoading = false;
@@ -222,9 +235,13 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 const proveedor = await proveedoresService.create(data);
                 await this.fetchProveedores();
+                const toast = useToast();
+                toast.success('Proveedor creado exitosamente');
                 return proveedor;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al crear proveedor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.proveedoresLoading = false;
@@ -237,9 +254,13 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 const proveedor = await proveedoresService.update(id, data);
                 await this.fetchProveedores();
+                const toast = useToast();
+                toast.success('Proveedor actualizado exitosamente');
                 return proveedor;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar proveedor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.proveedoresLoading = false;
@@ -252,8 +273,12 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 await proveedoresService.delete(id);
                 await this.fetchProveedores();
+                const toast = useToast();
+                toast.success('Proveedor eliminado exitosamente');
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al eliminar proveedor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.proveedoresLoading = false;
@@ -298,9 +323,13 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 const mina = await minasService.create(data);
                 await this.fetchMinas();
+                const toast = useToast();
+                toast.success('Mina creada exitosamente');
                 return mina;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al crear mina';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.minasLoading = false;
@@ -313,9 +342,13 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 const mina = await minasService.update(id, data);
                 await this.fetchMinas();
+                const toast = useToast();
+                toast.success('Mina actualizada exitosamente');
                 return mina;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar mina';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.minasLoading = false;
@@ -328,8 +361,12 @@ export const useMaestrosStore = defineStore('maestros', {
             try {
                 await minasService.delete(id);
                 await this.fetchMinas();
+                const toast = useToast();
+                toast.success('Mina eliminada exitosamente');
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al eliminar mina';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.minasLoading = false;
@@ -373,9 +410,13 @@ export const useMaestrosStore = defineStore('maestros', {
                 const supervisor = await supervisoresService.create(data);
                 this.supervisores.unshift(supervisor);
                 this.supervisoresTotal++;
+                const toast = useToast();
+                toast.success('Supervisor creado exitosamente');
                 return supervisor;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al crear supervisor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.supervisoresLoading = false;
@@ -391,9 +432,13 @@ export const useMaestrosStore = defineStore('maestros', {
                 if (index !== -1) {
                     this.supervisores[index] = supervisor;
                 }
+                const toast = useToast();
+                toast.success('Supervisor actualizado exitosamente');
                 return supervisor;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar supervisor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.supervisoresLoading = false;
@@ -410,8 +455,12 @@ export const useMaestrosStore = defineStore('maestros', {
                     this.supervisores.splice(index, 1);
                     this.supervisoresTotal--;
                 }
+                const toast = useToast();
+                toast.success('Supervisor eliminado exitosamente');
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al eliminar supervisor';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.supervisoresLoading = false;

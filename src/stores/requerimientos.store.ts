@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { requerimientosService } from '../services';
+import { useToast } from '../composables/useToast';
 import type {
     Requerimiento,
     CreateRequerimientoInput,
@@ -139,9 +140,13 @@ export const useRequerimientosStore = defineStore('requerimientos', {
                 const requerimiento = await requerimientosService.create(data);
                 this.requerimientos.unshift(requerimiento);
                 this.pagination.total++;
+                const toast = useToast();
+                toast.success('Requerimiento creado exitosamente');
                 return requerimiento;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al crear requerimiento';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;
@@ -164,9 +169,13 @@ export const useRequerimientosStore = defineStore('requerimientos', {
                 if (this.currentRequerimiento?.id_requerimiento === id) {
                     this.currentRequerimiento = requerimiento;
                 }
+                const toast = useToast();
+                toast.success('Requerimiento actualizado exitosamente');
                 return requerimiento;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al actualizar requerimiento';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;
@@ -192,9 +201,13 @@ export const useRequerimientosStore = defineStore('requerimientos', {
                 if (this.currentRequerimiento?.id_requerimiento === id) {
                     this.currentRequerimiento = requerimiento;
                 }
+                const toast = useToast();
+                toast.success(`Estado actualizado a ${estado}`);
                 return requerimiento;
             } catch (error: any) {
+                const toast = useToast();
                 this.error = error.response?.data?.message || 'Error al cambiar estado';
+                toast.error(this.error || 'Error desconocido');
                 throw error;
             } finally {
                 this.loading = false;
