@@ -81,7 +81,7 @@ onMounted(() => {
             <template #toolbar-filters>
                 <div class="filter-item">
                     <select v-model="filters.id_proveedor" @change="applyFilters" class="filter-select">
-                        <option value="">Todos los Proveedores</option>
+                        <option :value="undefined">Todos los Proveedores</option>
                         <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
                             {{ prov.nombre }}
                         </option>
@@ -90,7 +90,7 @@ onMounted(() => {
 
                 <div class="filter-item">
                     <select v-model="filters.id_mina" @change="applyFilters" class="filter-select">
-                        <option value="">Todas las Minas</option>
+                        <option :value="undefined">Todas las Minas</option>
                         <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
                             {{ mina.nombre }}
                         </option>
@@ -99,7 +99,7 @@ onMounted(() => {
 
                 <div class="filter-item">
                     <select v-model="filters.estado" @change="applyFilters" class="filter-select">
-                        <option value="">Todos los Estados</option>
+                        <option :value="undefined">Todos los Estados</option>
                         <option value="PENDIENTE">PENDIENTE</option>
                         <option value="PARCIAL">PARCIAL</option>
                         <option value="COMPLETADO">COMPLETADO</option>
@@ -224,13 +224,13 @@ onMounted(() => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="item in selectedReq.detalles" :key="item.id_detalle">
+                                    <tr v-for="item in selectedReq.requerimiento_detalles" :key="item.id_detalle">
                                         <td>
                                             <div class="flex-center">
                                                 <FileText class="icon-xs text-gray" />
-                                                {{ item.producto?.nombre }}
-                                                <span class="text-xs text-gray" v-if="item.producto?.medidas || item.producto?.medida">
-                                                    ({{ item.producto.medidas?.descripcion || item.producto.medida?.descripcion }})
+                                                {{ item.productos?.nombre }}
+                                                <span class="text-xs text-gray" v-if="item.productos?.medidas || item.productos?.medida">
+                                                    ({{ item.productos.medidas?.descripcion || item.productos.medida?.descripcion }})
                                                 </span>
                                             </div>
                                         </td>
