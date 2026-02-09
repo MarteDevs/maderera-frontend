@@ -7,9 +7,9 @@ import {
     minasService, 
     proveedoresService, 
     supervisoresService, 
-    productosService,
-    preciosService
+    productosService
 } from '../../services/maestros.service';
+import { preciosService } from '../../services/precios.service';
 import type { Mina, Proveedor, Supervisor, Producto } from '../../types/models';
 
 const router = useRouter();

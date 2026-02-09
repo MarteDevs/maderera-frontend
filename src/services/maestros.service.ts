@@ -152,15 +152,3 @@ export const clasificacionesService = {
         return response.data.data;
     },
 };
-
-// ============================================
-// PRECIOS (Catálogo Proveedor-Producto)
-// ============================================
-
-export const preciosService = {
-    async getAll(params?: { id_proveedor?: number; id_producto?: number; activo?: boolean }): Promise<any[]> {
-        const response = await api.get('/prices', { params });
-        // La estructura de respuesta de precios es { data: [...], pagination: ... } según el backend
-        return response.data.data;
-    },
-};
