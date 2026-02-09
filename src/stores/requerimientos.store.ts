@@ -37,6 +37,7 @@ export const useRequerimientosStore = defineStore('requerimientos', {
         filters: {
             estado: undefined,
             id_proveedor: undefined,
+            id_mina: undefined,
             fecha_inicio: undefined,
             fecha_fin: undefined,
             search: undefined,

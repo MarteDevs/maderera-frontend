@@ -270,6 +270,7 @@ export interface QueryParams {
 export interface RequerimientoFilters extends QueryParams {
     estado?: EstadoRequerimiento;
     id_proveedor?: number;
+    id_mina?: number;
     fecha_inicio?: string;
     fecha_fin?: string;
 }

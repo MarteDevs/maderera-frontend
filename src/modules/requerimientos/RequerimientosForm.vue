@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useRequerimientosStore } from './requerimientos.store';
+import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { ArrowLeft, Save, Plus, Trash } from 'lucide-vue-next';
 import { 
     minasService, 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { useRequerimientosStore } from './requerimientos.store';
+import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
 import { Plus, Truck, X, FileText } from 'lucide-vue-next';
@@ -22,8 +22,8 @@ const columns: Column[] = [
     { key: 'codigo', label: 'Código', sortable: true },
     { key: 'fecha_emision', label: 'Emisión', sortable: true },
     { key: 'fecha_prometida', label: 'Entrega', sortable: true },
-    { key: 'prov_nombre', label: 'Proveedor' },
-    { key: 'mina_nombre', label: 'Mina' },
+    { key: 'proveedores', label: 'Proveedor' },
+    { key: 'minas', label: 'Mina' },
     { key: 'estado', label: 'Estado', sortable: true },
     { key: 'actions', label: 'Acciones', align: 'center' }
 ];
@@ -144,12 +144,12 @@ onMounted(() => {
                     {{ value ? new Date(value).toLocaleDateString() : '-' }}
                 </template>
 
-                <template #cell-prov_nombre="{ value }">
-                    <span class="font-medium">{{ value }}</span>
+                <template #cell-proveedores="{ value }">
+                    <span class="font-medium">{{ value?.nombre || '---' }}</span>
                 </template>
 
-                <template #cell-mina_nombre="{ value }">
-                    <span>{{ value }}</span>
+                <template #cell-minas="{ value }">
+                    <span>{{ value?.nombre || '---' }}</span>
                 </template>
 
                 <template #cell-actions="{ row }">
@@ -195,11 +195,11 @@ onMounted(() => {
                     <div class="info-grid">
                         <div class="info-item">
                             <label>Proveedor</label>
-                            <span>{{ selectedReq.prov_nombre }}</span>
+                            <span>{{ selectedReq.proveedores?.nombre || selectedReq.prov_nombre || '---' }}</span>
                         </div>
                         <div class="info-item">
                             <label>Mina / Destino</label>
-                            <span>{{ selectedReq.mina_nombre }}</span>
+                            <span>{{ selectedReq.minas?.nombre || selectedReq.mina_nombre || '---' }}</span>
                         </div>
                         <div class="info-item">
                             <label>Fecha Emisión</label>
