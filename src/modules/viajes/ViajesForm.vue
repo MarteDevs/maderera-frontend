@@ -185,7 +185,7 @@ const showSuccessModal = ref(false);
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="detalle in formData.detalles" :key="detalle.id_detalle_requerimiento">
+                            <tr v-for="detalle in formData.detalles" :key="detalle.id_detalle_requerimiento" :class="{ 'row-completed': detalle.cantidad_pendiente <= 0 }">
                                 <td>
                                     <div class="product-info">
                                         <Truck class="icon-sm text-gray" />
@@ -501,5 +501,33 @@ const showSuccessModal = ref(false);
 .full-width-btn {
     width: 100%;
     justify-content: center;
+}
+
+/* New Styles */
+.row-completed td {
+    background-color: #fee2e2; /* Reddish tone for completed items */
+    color: #7f1d1d;
+}
+
+.row-completed .text-gray {
+    color: #991b1b;
+}
+
+.row-completed input,
+.row-completed select {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-color: #fca5a5;
+    color: #7f1d1d;
+}
+
+/* Enhanced Table Header */
+.details-table th {
+    background-color: var(--primary);
+    color: white;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: none;
 }
 </style>

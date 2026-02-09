@@ -288,3 +288,20 @@ export interface KardexFilters {
     tipo_movimiento?: TipoMovimiento;
     limit?: number;
 }
+
+// ============================================
+// AUTH
+// ============================================
+
+export interface User {
+    id: number;
+    username: string;
+    nombre: string;
+    rol: string;
+}
+
+export interface AuthResponse {
+    accessToken: string;
+    refreshToken: string;
+    user: User;
+}

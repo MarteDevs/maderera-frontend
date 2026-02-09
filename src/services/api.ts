@@ -24,12 +24,37 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
-            // TODO: Implement refresh token logic or redirect to login
-            localStorage.removeItem('token');
-            // If using router, redirect here or let the component handle it
-            // window.location.href = '/login'; 
+        const originalRequest = error.config;
+
+        // Si el error es 401 y no hemos reintentado aún
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                // Importar store dinámicamente para evitar dependencias circulares
+                const { useAuthStore } = await import('../stores/auth.store');
+                const authStore = useAuthStore();
+
+                // Intentar renovar el token
+                const success = await authStore.refreshAccessToken();
+
+                if (success) {
+                    // Actualizar el header de autorización
+                    originalRequest.headers.Authorization = `Bearer ${authStore.token}`;
+                    // Reintentar la petición original
+                    return api(originalRequest);
+                }
+            } catch (refreshError) {
+                console.error('Error al renovar sesión', refreshError);
+            }
+
+            // Si falla la renovación, limpiar y redirigir
+            const { useAuthStore } = await import('../stores/auth.store');
+            const authStore = useAuthStore();
+            authStore.logout();
+            return Promise.reject(error);
         }
+
         return Promise.reject(error);
     }
 );

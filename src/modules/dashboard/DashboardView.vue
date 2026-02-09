@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { onMounted, computed, ref } from 'vue';
 import { useRequerimientosStore } from '../requerimientos/requerimientos.store';
 import { useViajesStore } from '../viajes/viajes.store';
 import { useInventarioStore } from '../inventario/inventario.store';
@@ -12,12 +12,20 @@ const reqStore = useRequerimientosStore();
 const viajesStore = useViajesStore();
 const invStore = useInventarioStore();
 
+const loading = ref(true);
+
 onMounted(async () => {
-    await Promise.all([
-        reqStore.fetchRequerimientos(),
-        viajesStore.fetchViajes(),
-        invStore.fetchStock()
-    ]);
+    try {
+        await Promise.all([
+            reqStore.fetchRequerimientos(),
+            viajesStore.fetchViajes(),
+            invStore.fetchStock()
+        ]);
+    } catch (e) {
+        console.error('Error loading dashboard data', e);
+    } finally {
+        loading.value = false;
+    }
 });
 
 const activeReqs = computed(() => reqStore.requerimientos.filter(r => r.estado === 'PENDIENTE').length);
@@ -41,45 +49,59 @@ const navigateTo = (path: string) => router.push(path);
 
         <!-- KPI Grid -->
         <div class="kpi-grid">
-            <div class="kpi-card card-hover" @click="navigateTo('/requirements')">
-                <div class="icon-wrapper bg-orange">
-                    <FileClock class="icon" />
+            <!-- Skeletons -->
+            <template v-if="loading">
+                <div class="kpi-card skeleton-card" v-for="i in 4" :key="i">
+                    <div class="skeleton-icon"></div>
+                    <div class="skeleton-content">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-value"></div>
+                    </div>
                 </div>
-                <div class="kpi-content">
-                    <span class="kpi-title">Requerimientos Pendientes</span>
-                    <span class="kpi-value text-orange">{{ activeReqs }}</span>
-                </div>
-            </div>
-            
-            <div class="kpi-card card-hover" @click="navigateTo('/viajes')">
-                <div class="icon-wrapper bg-blue">
-                    <Truck class="icon" />
-                </div>
-                <div class="kpi-content">
-                    <span class="kpi-title">Viajes Registrados</span>
-                    <span class="kpi-value text-blue">{{ totalViajes }}</span>
-                </div>
-            </div>
-            
-            <div class="kpi-card card-hover" @click="navigateTo('/inventory')">
-                 <div class="icon-wrapper bg-emerald">
-                    <PackageCheck class="icon" />
-                </div>
-                <div class="kpi-content">
-                    <span class="kpi-title">Productos en Stock</span>
-                    <span class="kpi-value text-emerald">{{ totalProductos }}</span>
-                </div>
-            </div>
+            </template>
 
-            <div class="kpi-card card-hover" @click="navigateTo('/inventory')">
-                <div class="icon-wrapper bg-red">
-                    <AlertTriangle class="icon" />
+            <!-- Real Content -->
+            <template v-else>
+                <div class="kpi-card card-hover" @click="navigateTo('/requirements')">
+                    <div class="icon-wrapper bg-orange">
+                        <FileClock class="icon" />
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-title">Requerimientos Pendientes</span>
+                        <span class="kpi-value text-orange">{{ activeReqs }}</span>
+                    </div>
                 </div>
-                <div class="kpi-content">
-                    <span class="kpi-title">Alerta Stock Bajo</span>
-                    <span class="kpi-value text-red">{{ lowStock }}</span>
+                
+                <div class="kpi-card card-hover" @click="navigateTo('/viajes')">
+                    <div class="icon-wrapper bg-blue">
+                        <Truck class="icon" />
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-title">Viajes Registrados</span>
+                        <span class="kpi-value text-blue">{{ totalViajes }}</span>
+                    </div>
                 </div>
-            </div>
+                
+                <div class="kpi-card card-hover" @click="navigateTo('/inventory')">
+                        <div class="icon-wrapper bg-emerald">
+                        <PackageCheck class="icon" />
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-title">Productos en Stock</span>
+                        <span class="kpi-value text-emerald">{{ totalProductos }}</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card card-hover" @click="navigateTo('/inventory')">
+                    <div class="icon-wrapper bg-red">
+                        <AlertTriangle class="icon" />
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-title">Alerta Stock Bajo</span>
+                        <span class="kpi-value text-red">{{ lowStock }}</span>
+                    </div>
+                </div>
+            </template>
         </div>
     </div>
 </template>
