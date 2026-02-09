@@ -10,9 +10,12 @@ export const useViajesStore = defineStore('viajes', {
     state: () => ({
         // Lista de viajes
         viajes: [] as Viaje[],
-        total: 0,
-        page: 1,
-        limit: 20,
+        pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            totalPages: 1,
+        },
 
         // Viaje actual (detalle)
         currentViaje: null as Viaje | null,
@@ -31,7 +34,7 @@ export const useViajesStore = defineStore('viajes', {
 
     getters: {
         // Total de páginas
-        totalPages: (state) => Math.ceil(state.total / state.limit),
+        totalPages: (state) => state.pagination.totalPages,
 
         // Buscar viaje por ID
         getViajeById: (state) => (id: number) =>
@@ -55,17 +58,17 @@ export const useViajesStore = defineStore('viajes', {
             this.loading = true;
             this.error = null;
 
-            if (params?.page) this.page = params.page;
-            if (params?.limit) this.limit = params.limit;
+            if (params?.page) this.pagination.page = params.page;
+            if (params?.limit) this.pagination.limit = params.limit;
 
             try {
                 const response = await viajesService.getAll({
-                    page: this.page,
-                    limit: this.limit,
+                    page: this.pagination.page,
+                    limit: this.pagination.limit,
                 });
 
                 this.viajes = response.data;
-                this.total = response.total;
+                this.pagination = response.pagination;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al cargar viajes';
                 throw error;
@@ -106,7 +109,7 @@ export const useViajesStore = defineStore('viajes', {
                 await this.fetchViajesByRequerimiento(data.id_requerimiento);
 
                 // Agregar a la lista general si estamos en la primera página
-                if (this.page === 1) {
+                if (this.pagination.page === 1) {
                     await this.fetchViajes();
                 }
 
@@ -176,7 +179,7 @@ export const useViajesStore = defineStore('viajes', {
                 const index = this.viajes.findIndex((v) => v.id_viaje === id);
                 if (index !== -1) {
                     this.viajes.splice(index, 1);
-                    this.total--;
+                    this.pagination.total--;
                 }
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al eliminar viaje';
@@ -191,26 +194,26 @@ export const useViajesStore = defineStore('viajes', {
         // ============================================
 
         setPage(page: number) {
-            this.page = page;
+            this.pagination.page = page;
             this.fetchViajes();
         },
 
         setLimit(limit: number) {
-            this.limit = limit;
-            this.page = 1;
+            this.pagination.limit = limit;
+            this.pagination.page = 1;
             this.fetchViajes();
         },
 
         nextPage() {
-            if (this.page < this.totalPages) {
-                this.page++;
+            if (this.pagination.page < this.pagination.totalPages) {
+                this.pagination.page++;
                 this.fetchViajes();
             }
         },
 
         prevPage() {
-            if (this.page > 1) {
-                this.page--;
+            if (this.pagination.page > 1) {
+                this.pagination.page--;
                 this.fetchViajes();
             }
         },

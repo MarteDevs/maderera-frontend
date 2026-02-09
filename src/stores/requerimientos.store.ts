@@ -16,9 +16,12 @@ export const useRequerimientosStore = defineStore('requerimientos', {
     state: () => ({
         // Lista de requerimientos
         requerimientos: [] as Requerimiento[],
-        total: 0,
-        page: 1,
-        limit: 20,
+        pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            totalPages: 1,
+        },
 
         // Requerimiento actual (detalle)
         currentRequerimiento: null as Requerimiento | null,
@@ -56,8 +59,8 @@ export const useRequerimientosStore = defineStore('requerimientos', {
         requerimientosAnulados: (state) =>
             state.requerimientos.filter((r) => r.estado === 'ANULADO'),
 
-        // Total de páginas
-        totalPages: (state) => Math.ceil(state.total / state.limit),
+        // Total de páginas (now accessed directly from pagination state)
+        totalPages: (state) => state.pagination.totalPages,
 
         // Buscar por ID
         getRequerimientoById: (state) => (id: number) =>
@@ -93,12 +96,12 @@ export const useRequerimientosStore = defineStore('requerimientos', {
             try {
                 const response = await requerimientosService.getAll({
                     ...this.filters,
-                    page: this.page,
-                    limit: this.limit,
+                    page: this.pagination.page,
+                    limit: this.pagination.limit,
                 });
 
                 this.requerimientos = response.data;
-                this.total = response.total;
+                this.pagination = response.pagination;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al cargar requerimientos';
                 throw error;
@@ -135,7 +138,7 @@ export const useRequerimientosStore = defineStore('requerimientos', {
             try {
                 const requerimiento = await requerimientosService.create(data);
                 this.requerimientos.unshift(requerimiento);
-                this.total++;
+                this.pagination.total++;
                 return requerimiento;
             } catch (error: any) {
                 this.error = error.response?.data?.message || 'Error al crear requerimiento';
@@ -229,26 +232,26 @@ export const useRequerimientosStore = defineStore('requerimientos', {
         // ============================================
 
         setPage(page: number) {
-            this.page = page;
+            this.pagination.page = page;
             this.fetchRequerimientos();
         },
 
         setLimit(limit: number) {
-            this.limit = limit;
-            this.page = 1;
+            this.pagination.limit = limit;
+            this.pagination.page = 1;
             this.fetchRequerimientos();
         },
 
         nextPage() {
-            if (this.page < this.totalPages) {
-                this.page++;
+            if (this.pagination.page < this.pagination.totalPages) {
+                this.pagination.page++;
                 this.fetchRequerimientos();
             }
         },
 
         prevPage() {
-            if (this.page > 1) {
-                this.page--;
+            if (this.pagination.page > 1) {
+                this.pagination.page--;
                 this.fetchRequerimientos();
             }
         },
@@ -259,7 +262,7 @@ export const useRequerimientosStore = defineStore('requerimientos', {
 
         setFilters(filters: Partial<RequerimientoFilters>) {
             this.filters = { ...this.filters, ...filters };
-            this.page = 1;
+            this.pagination.page = 1;
             this.fetchRequerimientos();
         },
 
@@ -271,7 +274,7 @@ export const useRequerimientosStore = defineStore('requerimientos', {
                 fecha_fin: undefined,
                 search: undefined,
             };
-            this.page = 1;
+            this.pagination.page = 1;
             this.fetchRequerimientos();
         },
 
