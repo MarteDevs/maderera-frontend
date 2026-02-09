@@ -111,8 +111,19 @@ const removeProveedorRow = (index: number) => {
 const handleSubmit = async () => {
     try {
         // Validation: remove items with no provider selected
-        const validProveedores = formData.value.proveedores.filter(p => p.id_proveedor > 0);
-        const payload = { ...formData.value, proveedores: validProveedores };
+        // Validation: remove items with no provider selected
+        const validProveedores = formData.value.proveedores
+            .filter(p => p.id_proveedor > 0)
+            .map(p => ({
+                ...p,
+                precio_compra_sugerido: Number(p.precio_compra_sugerido)
+            }));
+
+        const payload = { 
+            ...formData.value, 
+            precio_venta_base: Number(formData.value.precio_venta_base),
+            proveedores: validProveedores 
+        };
 
         if (isEditing.value && editingProducto.value) {
             await maestrosStore.updateProducto(editingProducto.value.id_producto, payload);
