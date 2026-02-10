@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
+import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
 import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X } from 'lucide-vue-next';
@@ -14,6 +15,9 @@ const maestrosStore = useMaestrosStore();
 
 const { despachos, loading, pagination } = storeToRefs(despachosStore);
 const { minas } = storeToRefs(maestrosStore);
+
+const inventarioData = ref<any[]>([]);
+const loadingInventario = ref(false);
 
 // Filters
 const filters = ref({
@@ -55,6 +59,30 @@ const columns: Column[] = [
 ];
 
 // Methods
+const loadInventario = async () => {
+    if (inventarioData.value.length > 0) return; // Cache simple
+    
+    loadingInventario.value = true;
+    try {
+        const response = await inventarioService.getStock();
+        inventarioData.value = (response.data || []).map((item: any) => ({
+            id_producto: item.id_producto,
+            id_medida: item.id_medida || 0,
+            precio_venta: parseFloat(item.precio_venta_base) || 0,
+            // Misma lógica que en el Form: Si no hay sugerido, 70% del venta
+            precio_compra: item.precio_compra_sugerido ? parseFloat(item.precio_compra_sugerido) : (parseFloat(item.precio_venta_base) || 0) * 0.7
+        }));
+    } catch (error) {
+        console.error('Error cargando precios de inventario:', error);
+    } finally {
+        loadingInventario.value = false;
+    }
+};
+
+const getPrecioInfo = (id_producto: number) => {
+    return inventarioData.value.find(item => item.id_producto === id_producto);
+};
+
 const fetchDespachos = () => {
     despachosStore.fetchDespachos({
         ...filters.value,
@@ -119,8 +147,25 @@ const crearDespacho = () => {
     router.push('/despachos/nuevo');
 };
 
-const verDetalle = (despacho: any) => {
-    selectedDespacho.value = despacho;
+const verDetalle = async (despacho: any) => {
+    // Asegurar que tenemos los precios
+    await loadInventario();
+
+    // Enriquecer los detalles con precios
+    const detallesEnriquecidos = despacho.despacho_detalles.map((d: any) => {
+        const precios = getPrecioInfo(d.id_producto);
+        return {
+            ...d,
+            precio_compra: precios?.precio_compra || 0,
+            precio_venta: precios?.precio_venta || 0
+        };
+    });
+
+    selectedDespacho.value = {
+        ...despacho,
+        despacho_detalles: detallesEnriquecidos
+    };
+    
     showDetailModal.value = true;
 };
 
@@ -550,6 +595,10 @@ onMounted(() => {
                                     <tr>
                                         <th>Producto</th>
                                         <th class="text-right">Cantidad</th>
+                                        <th class="text-right">P. Compra</th>
+                                        <th class="text-right">Total Compra</th>
+                                        <th class="text-right">P. Venta</th>
+                                        <th class="text-right">Total Venta</th>
                                         <th>Observación</th>
                                     </tr>
                                 </thead>
@@ -565,6 +614,10 @@ onMounted(() => {
                                             </div>
                                         </td>
                                         <td class="text-right bold">{{ item.cantidad_despachada }}</td>
+                                        <td class="text-right">S/. {{ Number(item.precio_compra).toFixed(2) }}</td>
+                                        <td class="text-right">S/. {{ (Number(item.cantidad_despachada) * Number(item.precio_compra)).toFixed(2) }}</td>
+                                        <td class="text-right">S/. {{ Number(item.precio_venta).toFixed(2) }}</td>
+                                        <td class="text-right">S/. {{ (Number(item.cantidad_despachada) * Number(item.precio_venta)).toFixed(2) }}</td>
                                         <td>{{ item.observacion || '-' }}</td>
                                     </tr>
                                 </tbody>
@@ -590,6 +643,22 @@ onMounted(() => {
                                     <div class="detail-row">
                                         <span class="detail-label">Cantidad:</span>
                                         <span class="detail-value bold">{{ item.cantidad_despachada }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">P. Compra:</span>
+                                        <span class="detail-value">S/. {{ Number(item.precio_compra).toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Total Compra:</span>
+                                        <span class="detail-value">S/. {{ (Number(item.cantidad_despachada) * Number(item.precio_compra)).toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">P. Venta:</span>
+                                        <span class="detail-value">S/. {{ Number(item.precio_venta).toFixed(2) }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Total Venta:</span>
+                                        <span class="detail-value">S/. {{ (Number(item.cantidad_despachada) * Number(item.precio_venta)).toFixed(2) }}</span>
                                     </div>
                                     <div class="detail-row" v-if="item.observacion">
                                         <span class="detail-label">Obs:</span>
