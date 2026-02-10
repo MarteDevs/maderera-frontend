@@ -5,7 +5,7 @@ import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
 import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
-import { ArrowLeft, Save, Plus, Trash2, PackageCheck, AlertCircle } from 'lucide-vue-next';
+import { ArrowLeft, Save, Plus, Trash2, PackageCheck, AlertCircle, ChevronDown, Package } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -275,298 +275,297 @@ onMounted(async () => {
 
 <template>
     <div class="despachos-form-view">
-        <header class="page-header">
-            <div class="header-content">
-                <div class="title-group">
-                    <button class="btn-back" @click="router.back()">
-                        <ArrowLeft class="icon" />
-                    </button>
-                    <div>
-                        <h1 class="page-title">{{ pageTitle }}</h1>
-                        <p class="page-subtitle">Complete la información del despacho</p>
-                    </div>
+        <!-- Main Layout -->
+        <div class="content-wrapper">
+            <!-- Header Section -->
+            <header class="page-header-premium">
+                <div class="header-breadcrumb">
+                    <span class="breadcrumb-item">Despachos</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-current">{{ isEditMode ? 'Editar' : 'Nuevo' }}</span>
                 </div>
-                <div class="actions desktop-only">
-                    <button class="btn-secondary" @click="router.back()">Cancelar</button>
-                    <button class="btn-primary" @click="save" :disabled="loading">
-                        <Save class="icon" />
-                        {{ loading ? 'Guardando...' : 'Guardar' }}
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <div class="form-container">
-            <!-- Datos Generales -->
-            <div class="form-section">
-                <h2 class="section-title">
-                    <PackageCheck class="icon" />
-                    Datos del Despacho
-                </h2>
-
-                <div class="form-grid">
-                    <div class="form-group" :class="{ 'has-error': errors.id_mina }">
-                        <label class="required">Mina Destino</label>
-                        <select v-model.number="formData.id_mina" class="form-control">
-                            <option :value="undefined">Seleccione una mina</option>
-                            <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
-                                {{ mina.nombre }}
-                            </option>
-                        </select>
-                        <span v-if="errors.id_mina" class="error-message">{{ errors.id_mina }}</span>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Supervisor</label>
-                        <select v-model.number="formData.id_supervisor" class="form-control">
-                            <option :value="undefined">Seleccione un supervisor</option>
-                            <option v-for="sup in supervisores" :key="sup.id_supervisor" :value="sup.id_supervisor">
-                                {{ sup.nombre }}
-                            </option>
-                        </select>
-                    </div>
-
-                    <div class="form-group full-width">
-                        <label>Observaciones</label>
-                        <textarea 
-                            v-model="formData.observaciones" 
-                            class="form-control"
-                            rows="3"
-                            placeholder="Observaciones adicionales..."
-                        ></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Productos -->
-            <div class="form-section">
-                <div class="section-header">
-                    <h2 class="section-title">Productos a Despachar</h2>
-                    <button class="btn btn-primary btn-sm" @click="addDetalle">
-                        <Plus class="icon-xs" /> Agregar Producto
-                    </button>
-                </div>
-
-                <div v-if="errors.detalles" class="alert alert-error">
-                    <AlertCircle class="icon-sm" />
-                    {{ errors.detalles }}
-                </div>
-
-                <!-- Desktop Table -->
-                <div class="desktop-only">
-                    <div class="table-responsive">
-                        <table class="productos-table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 18%">Producto *</th>
-                                    <th style="width: 10%">Medida</th>
-                                    <th style="width: 7%">Stock</th>
-                                    <th style="width: 10%">P. Compra</th>
-                                    <th style="width: 10%">P. Venta</th>
-                                    <th style="width: 8%">Cantidad *</th>
-                                    <th style="width: 10%">Total Compra</th>
-                                    <th style="width: 10%">Total Venta</th>
-                                    <th style="width: 12%">Observación</th>
-                                    <th style="width: 5%"></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(detalle, index) in formData.detalles" :key="index">
-                                    <td>
-                                        <select 
-                                            v-model.number="detalle.id_producto" 
-                                            @change="onProductoChange(index)"
-                                            class="form-control"
-                                        >
-                                            <option :value="0">Seleccione</option>
-                                            <option 
-                                                v-for="prod in productosConStock" 
-                                                :key="prod.id_producto" 
-                                                :value="prod.id_producto"
-                                            >
-                                                {{ prod.producto_nombre }} - {{ prod.medida_descripcion }}
-                                            </option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input 
-                                            type="text"
-                                            :value="detalle.medida_descripcion || '-'"
-                                            class="form-control"
-                                            disabled
-                                        />
-                                    </td>
-                                    <td>
-                                        <span class="stock-badge" :class="{ 'low-stock': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
-                                            {{ detalle.stock_actual || 0 }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="price-display">{{ formatCurrency(detalle.precio_compra || 0) }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="price-display">{{ formatCurrency(detalle.precio_venta || 0) }}</span>
-                                    </td>
-                                    <td>
-                                        <input 
-                                            type="number"
-                                            v-model.number="detalle.cantidad_despachada"
-                                            @input="onCantidadChange(index)"
-                                            class="form-control"
-                                            min="1"
-                                            :max="detalle.stock_actual"
-                                            placeholder="0"
-                                        />
-                                    </td>
-                                    <td>
-                                        <span class="subtotal-display">{{ formatCurrency(detalle.total_compra || 0) }}</span>
-                                    </td>
-                                    <td>
-                                        <span class="subtotal-display">{{ formatCurrency(detalle.total_venta || 0) }}</span>
-                                    </td>
-                                    <td>
-                                        <input 
-                                            type="text"
-                                            v-model="detalle.observacion"
-                                            class="form-control"
-                                            placeholder="..."
-                                        />
-                                    </td>
-                                    <td>
-                                        <button 
-                                            @click="removeDetalle(index)" 
-                                            class="btn-icon btn-danger"
-                                            type="button"
-                                        >
-                                            <Trash2 class="icon-xs" />
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr v-if="formData.detalles.length > 0" class="total-row">
-                                    <td colspan="6" class="text-right"><strong>TOTALES GENERALES:</strong></td>
-                                    <td><strong class="total-amount">{{ formatCurrency(totalCompraGeneral) }}</strong></td>
-                                    <td><strong class="total-amount">{{ formatCurrency(totalVentaGeneral) }}</strong></td>
-                                    <td colspan="2"></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Mobile Cards -->
-                <div class="mobile-only">
-                    <div class="producto-card" v-for="(detalle, index) in formData.detalles" :key="index">
-                        <div class="card-header">
-                            <span class="card-number">Producto #{{ index + 1 }}</span>
-                            <button @click="removeDetalle(index)" class="btn-icon btn-danger btn-sm">
-                                <Trash2 class="icon-xs" />
-                            </button>
-                        </div>
-
-                        <div class="card-body">
-                            <div class="form-group">
-                                <label class="required">Producto</label>
-                                <select 
-                                    v-model.number="detalle.id_producto" 
-                                    @change="onProductoChange(index)"
-                                    class="form-control"
-                                >
-                                    <option :value="0">Seleccione</option>
-                                    <option 
-                                        v-for="prod in productosConStock" 
-                                        :key="prod.id_producto" 
-                                        :value="prod.id_producto"
-                                    >
-                                        {{ prod.producto_nombre }} - {{ prod.medida_descripcion }}
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="info-grid">
-                                <div class="info-item">
-                                    <span class="label">Medida:</span>
-                                    <span class="value">{{ detalle.medida_descripcion || '-' }}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">Stock:</span>
-                                    <span class="value stock-badge" :class="{ 'low-stock': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
-                                        {{ detalle.stock_actual || 0 }}
-                                    </span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">P. Compra:</span>
-                                    <span class="value">{{ formatCurrency(detalle.precio_compra || 0) }}</span>
-                                </div>
-                                <div class="info-item">
-                                    <span class="label">P. Venta:</span>
-                                    <span class="value">{{ formatCurrency(detalle.precio_venta || 0) }}</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="required">Cantidad</label>
-                                <input 
-                                    type="number"
-                                    v-model.number="detalle.cantidad_despachada"
-                                    @input="onCantidadChange(index)"
-                                    class="form-control"
-                                    min="1"
-                                    :max="detalle.stock_actual"
-                                    placeholder="0"
-                                />
-                            </div>
-
-                            <div class="totales-mobile">
-                                <div class="total-item">
-                                    <span class="label">Total Compra:</span>
-                                    <span class="value">{{ formatCurrency(detalle.total_compra || 0) }}</span>
-                                </div>
-                                <div class="total-item">
-                                    <span class="label">Total Venta:</span>
-                                    <span class="value">{{ formatCurrency(detalle.total_venta || 0) }}</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Observación</label>
-                                <input 
-                                    type="text"
-                                    v-model="detalle.observacion"
-                                    class="form-control"
-                                    placeholder="Observación..."
-                                />
-                            </div>
+                <div class="header-content">
+                    <div class="title-group">
+                        <button class="btn-back-premium" @click="router.back()">
+                            <ArrowLeft class="icon" />
+                        </button>
+                        <div class="title-text">
+                            <h1 class="page-title">{{ pageTitle }}</h1>
+                            <p class="page-subtitle">Complete la información del despacho</p>
                         </div>
                     </div>
-
-                    <div v-if="formData.detalles.length > 0" class="totales-generales-mobile">
-                        <div class="total-item">
-                            <span class="label">TOTAL COMPRA:</span>
-                            <span class="value">{{ formatCurrency(totalCompraGeneral) }}</span>
-                        </div>
-                        <div class="total-item total-venta">
-                            <span class="label">TOTAL VENTA:</span>
-                            <span class="value">{{ formatCurrency(totalVentaGeneral) }}</span>
-                        </div>
-                    </div>
-
-                    <div v-if="formData.detalles.length === 0" class="empty-state">
-                        <p>No hay productos agregados</p>
-                        <button class="btn btn-primary btn-sm" @click="addDetalle">
-                            <Plus class="icon-xs" /> Agregar Primer Producto
+                    <div class="actions desktop-only">
+                        <button class="btn-ghost" @click="router.back()">Cancelar</button>
+                        <button class="btn-primary-premium" @click="save" :disabled="loading">
+                            <Save class="icon" />
+                            <span>{{ loading ? 'Guardando...' : 'Guardar Despacho' }}</span>
                         </button>
                     </div>
                 </div>
+            </header>
+
+            <div class="form-container">
+                <!-- Datos Generales Card -->
+                <div class="premium-card">
+                    <div class="card-header-premium">
+                        <div class="card-icon">
+                            <PackageCheck class="icon" />
+                        </div>
+                        <div class="card-title">
+                            <h3>Datos Generales</h3>
+                            <p>Información básica del traslado</p>
+                        </div>
+                    </div>
+
+                    <div class="card-body-premium">
+                        <div class="form-grid">
+                            <div class="form-group" :class="{ 'has-error': errors.id_mina }">
+                                <label class="required">Mina Destino</label>
+                                <div class="select-wrapper">
+                                    <select v-model.number="formData.id_mina" class="form-control-premium">
+                                        <option :value="undefined">Seleccione una mina</option>
+                                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                                            {{ mina.nombre }}
+                                        </option>
+                                    </select>
+                                    <ChevronDown class="select-icon" />
+                                </div>
+                                <span v-if="errors.id_mina" class="error-message">{{ errors.id_mina }}</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Supervisor Responsable</label>
+                                <div class="select-wrapper">
+                                    <select v-model.number="formData.id_supervisor" class="form-control-premium">
+                                        <option :value="undefined">Seleccione un supervisor</option>
+                                        <option v-for="sup in supervisores" :key="sup.id_supervisor" :value="sup.id_supervisor">
+                                            {{ sup.nombre }}
+                                        </option>
+                                    </select>
+                                    <ChevronDown class="select-icon" />
+                                </div>
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label>Observaciones</label>
+                                <textarea 
+                                    v-model="formData.observaciones" 
+                                    class="form-control-premium textarea"
+                                    rows="3"
+                                    placeholder="Ingrese cualquier observación relevante para este despacho..."
+                                ></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos Card -->
+                <div class="premium-card">
+                    <div class="card-header-premium flex-between">
+                        <div class="header-left">
+                            <div class="card-icon secondary">
+                                <Package class="icon" />
+                            </div>
+                            <div class="card-title">
+                                <h3>Productos a Despachar</h3>
+                                <p>Detalle de items e inventario</p>
+                            </div>
+                        </div>
+                        <button class="btn-secondary-premium btn-sm" @click="addDetalle">
+                            <Plus class="icon-xs" /> Agregar Producto
+                        </button>
+                    </div>
+
+                    <div class="card-body-premium">
+                        <div v-if="errors.detalles" class="alert-premium error">
+                            <AlertCircle class="icon-sm" />
+                            {{ errors.detalles }}
+                        </div>
+
+                        <!-- Desktop Table -->
+                        <div class="desktop-only table-wrapper-premium">
+                            <table class="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 20%">Producto</th>
+                                        <th style="width: 8%" class="text-center">Stock</th>
+                                        <th style="width: 10%" class="text-right">P. Compra</th>
+                                        <th style="width: 10%" class="text-right">P. Venta</th>
+                                        <th style="width: 10%" class="text-center">Cantidad</th>
+                                        <th style="width: 10%" class="text-right">T. Compra</th>
+                                        <th style="width: 10%" class="text-right">T. Venta</th>
+                                        <th style="width: 15%">Observación</th>
+                                        <th style="width: 4%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(detalle, index) in formData.detalles" :key="index">
+                                        <td>
+                                            <div class="product-select-wrapper">
+                                                <select 
+                                                    v-model.number="detalle.id_producto" 
+                                                    @change="onProductoChange(index)"
+                                                    class="form-control-premium dense"
+                                                >
+                                                    <option :value="0">Seleccione Producto</option>
+                                                    <option 
+                                                        v-for="prod in productosConStock" 
+                                                        :key="prod.id_producto" 
+                                                        :value="prod.id_producto"
+                                                    >
+                                                        {{ prod.producto_nombre }} - {{ prod.medida_descripcion || 'S/M' }}
+                                                    </option>
+                                                </select>
+                                                <div v-if="detalle.medida_descripcion" class="medida-badge">
+                                                    {{ detalle.medida_descripcion }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
+                                                {{ detalle.stock_actual || 0 }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right font-mono text-sm text-gray">
+                                            {{ formatCurrency(detalle.precio_compra || 0) }}
+                                        </td>
+                                        <td class="text-right font-mono text-sm font-medium">
+                                            {{ formatCurrency(detalle.precio_venta || 0) }}
+                                        </td>
+                                        <td>
+                                            <input 
+                                                type="number"
+                                                v-model.number="detalle.cantidad_despachada"
+                                                @input="onCantidadChange(index)"
+                                                class="form-control-premium dense text-center"
+                                                min="1"
+                                                :max="detalle.stock_actual"
+                                            />
+                                        </td>
+                                        <td class="text-right font-mono font-bold text-gray-700">
+                                            {{ formatCurrency(detalle.total_compra || 0) }}
+                                        </td>
+                                        <td class="text-right font-mono font-bold text-primary">
+                                            {{ formatCurrency(detalle.total_venta || 0) }}
+                                        </td>
+                                        <td>
+                                            <input 
+                                                type="text"
+                                                v-model="detalle.observacion"
+                                                class="form-control-premium dense"
+                                                placeholder="..."
+                                            />
+                                        </td>
+                                        <td class="text-center">
+                                            <button 
+                                                @click="removeDetalle(index)" 
+                                                class="btn-icon-danger"
+                                                title="Eliminar línea"
+                                            >
+                                                <Trash2 class="icon-xs" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="formData.detalles.length === 0">
+                                        <td colspan="9" class="empty-row">
+                                            No hay productos agregados. Haga clic en <span class="text-primary">Agregar Producto</span>.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                                <tfoot v-if="formData.detalles.length > 0">
+                                    <tr class="total-row-premium">
+                                        <td colspan="5" class="text-right label">TOTALES GENERALES</td>
+                                        <td class="text-right value text-gray-700">{{ formatCurrency(totalCompraGeneral) }}</td>
+                                        <td class="text-right value">{{ formatCurrency(totalVentaGeneral) }}</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards -->
+                        <div class="mobile-only product-list-mobile">
+                            <div class="mobile-card-item" v-for="(detalle, index) in formData.detalles" :key="index">
+                                <div class="mobile-card-header">
+                                    <div class="product-info-mobile">
+                                        <span class="index-badge">#{{ index + 1 }}</span>
+                                        <select 
+                                            v-model.number="detalle.id_producto" 
+                                            @change="onProductoChange(index)"
+                                            class="form-control-premium mobile-select"
+                                        >
+                                            <option :value="0">Seleccione Producto</option>
+                                            <option v-for="prod in productosConStock" :key="prod.id_producto" :value="prod.id_producto">
+                                                {{ prod.producto_nombre }} - {{ prod.medida_descripcion || 'S/M' }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <button @click="removeDetalle(index)" class="btn-icon-danger sm">
+                                        <Trash2 class="icon-xs" />
+                                    </button>
+                                </div>
+
+                                <div class="mobile-card-body">
+                                    <div class="mobile-grid-row">
+                                        <div class="mobile-field">
+                                            <label>Medida</label>
+                                            <span class="static-value">{{ detalle.medida_descripcion || '-' }}</span>
+                                        </div>
+                                        <div class="mobile-field">
+                                            <label>Stock</label>
+                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
+                                                {{ detalle.stock_actual || 0 }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mobile-grid-row">
+                                        <div class="mobile-field">
+                                            <label>Cantidad</label>
+                                            <input 
+                                                type="number"
+                                                v-model.number="detalle.cantidad_despachada"
+                                                @input="onCantidadChange(index)"
+                                                class="form-control-premium dense"
+                                            />
+                                        </div>
+                                        <div class="mobile-field text-right">
+                                            <label>Total Venta</label>
+                                            <span class="price-value-lg">{{ formatCurrency(detalle.total_venta || 0) }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mobile-field full">
+                                        <input 
+                                            type="text"
+                                            v-model="detalle.observacion"
+                                            class="form-control-premium dense"
+                                            placeholder="Observación..."
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="formData.detalles.length > 0" class="mobile-summary-card">
+                                <div class="summary-row">
+                                    <span>Total Compra</span>
+                                    <span>{{ formatCurrency(totalCompraGeneral) }}</span>
+                                </div>
+                                <div class="summary-row highlight">
+                                    <span>Total Venta</span>
+                                    <span>{{ formatCurrency(totalVentaGeneral) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Mobile Actions -->
-            <div class="mobile-only mobile-actions">
-                <button class="btn btn-secondary btn-block" @click="router.back()">
-                    Cancelar
-                </button>
-                <button class="btn btn-primary btn-block" @click="save" :disabled="loading">
-                    <Save class="icon" />
-                    {{ loading ? 'Guardando...' : 'Guardar Despacho' }}
+            <!-- Mobile Sticky Actions -->
+            <div class="mobile-actions-bar mobile-only">
+                <button class="btn-ghost mobile" @click="router.back()">Cancelar</button>
+                <button class="btn-primary-premium mobile" @click="save" :disabled="loading">
+                    {{ loading ? 'Guardando...' : 'Guardar' }}
                 </button>
             </div>
         </div>
@@ -576,497 +575,503 @@ onMounted(async () => {
 <style scoped>
 .despachos-form-view {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+    background-color: #f3f4f6;
+    padding-bottom: 2rem;
 }
 
-.page-header {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    padding: 1.75rem 2rem;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+.content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+/* Premium Header */
+.page-header-premium {
+    padding: 2rem 0;
+    margin-bottom: 1rem;
+}
+
+.header-breadcrumb {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.breadcrumb-current {
+    color: #111827;
+    font-weight: 600;
 }
 
 .header-content {
-    max-width: 1400px;
-    margin: 0 auto;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-end;
 }
 
 .title-group {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
-.btn-back {
-    width: 44px;
-    height: 44px;
+.btn-back-premium {
+    width: 40px;
+    height: 40px;
     border-radius: 12px;
-    border: none;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: white;
+    border: 1px solid #e5e7eb;
+    color: #374151;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.btn-back:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+.btn-back-premium:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    transform: translateX(-2px);
 }
 
-.page-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.title-text h1 {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #111827;
     margin: 0;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
 }
 
-.page-subtitle {
+.title-text p {
     color: #6b7280;
-    margin: 0.375rem 0 0 0;
-    font-size: 0.9rem;
-    font-weight: 500;
+    margin: 0.25rem 0 0 0;
+    font-size: 0.95rem;
 }
 
-.actions {
+/* Premium Buttons */
+.btn-primary-premium {
+    background: #8B1E1E;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(139, 30, 30, 0.2);
 }
 
-.form-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem;
+.btn-primary-premium:hover:not(:disabled) {
+    background: #701111;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px -1px rgba(139, 30, 30, 0.3);
 }
 
-.form-section {
+.btn-primary-premium:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-secondary-premium {
     background: white;
-    border-radius: 16px;
-    padding: 2rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    transition: all 0.3s ease;
-}
-
-.form-section:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-    transform: translateY(-2px);
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.section-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #1f2937;
+    border: 1px solid #e5e7eb;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin: 0 0 1.5rem 0;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #f3f4f6;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.section-title .icon {
-    color: #667eea;
-    width: 24px;
-    height: 24px;
+.btn-secondary-premium:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
 }
 
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
+.btn-ghost {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s;
 }
 
-.form-group {
+.btn-ghost:hover {
+    color: #111827;
+}
+
+/* Premium Cards */
+.form-container {
     display: flex;
     flex-direction: column;
+    gap: 2rem;
 }
 
-.form-group.full-width {
-    grid-column: 1 / -1;
+.premium-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.02);
+    overflow: hidden;
 }
 
-.form-group.has-error .form-control {
-    border-color: #ef4444;
-    background: #fef2f2;
-}
-
-.form-group label {
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.form-group label.required::after {
-    content: '*';
-    color: #ef4444;
-    font-weight: 700;
-    margin-left: 0.25rem;
-}
-
-.form-control {
-    padding: 0.75rem 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    font-family: inherit;
-    transition: all 0.2s ease;
+.card-header-premium {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
     background: #ffffff;
 }
 
-.form-control:hover {
-    border-color: #cbd5e1;
+.card-header-premium.flex-between {
+    justify-content: space-between;
 }
 
-.form-control:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-}
-
-.form-control:disabled {
-    background: #f9fafb;
-    cursor: not-allowed;
-    color: #9ca3af;
-}
-
-.error-message {
-    color: #ef4444;
-    font-size: 0.8rem;
-    margin-top: 0.375rem;
-    font-weight: 500;
-}
-
-.alert {
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
+.header-left {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-weight: 500;
+    gap: 1rem;
 }
 
-.alert-error {
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-    color: #991b1b;
-    border: 2px solid #fca5a5;
-}
-
-.table-responsive {
-    overflow-x: auto;
-    margin: 1.5rem 0;
+.card-icon {
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
-    border: 1px solid #e5e7eb;
+    background: #fee2e2;
+    color: #8B1E1E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.productos-table {
+.card-icon.secondary {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.card-title h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.card-title p {
+    margin: 0.125rem 0 0 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.card-body-premium {
+    padding: 2rem;
+}
+
+/* Form Styles */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.form-group label.required::after {
+    content: "*";
+    color: #ef4444;
+    margin-left: 0.25rem;
+}
+
+.form-control-premium {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #111827;
+    transition: all 0.2s;
+    background: #ffffff;
+}
+
+.form-control-premium:focus {
+    outline: none;
+    border-color: #8B1E1E;
+    box-shadow: 0 0 0 3px rgba(139, 30, 30, 0.1);
+}
+
+.select-wrapper {
+    position: relative;
+}
+
+.select-icon {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    width: 16px;
+    height: 16px;
+}
+
+.form-control-premium.dense {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.form-control-premium.textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Premium Table */
+.table-wrapper-premium {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.table-premium {
     width: 100%;
     border-collapse: collapse;
 }
 
-.productos-table th {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+.table-premium th {
+    background: #f9fafb;
     padding: 1rem;
     text-align: left;
+    font-size: 0.75rem;
     font-weight: 700;
-    font-size: 0.85rem;
-    color: #374151;
-    border-bottom: 2px solid #d1d5db;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
+    color: #6b7280;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.productos-table td {
-    padding: 1rem;
+.table-premium td {
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid #f3f4f6;
     vertical-align: middle;
 }
 
-.productos-table tbody tr {
-    transition: all 0.2s ease;
-}
-
-.productos-table tbody tr:hover {
-    background: #f9fafb;
-}
-
-.total-row {
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    font-weight: 700;
-}
-
-.total-row td {
-    border-bottom: none;
-    padding: 1.25rem 1rem;
-}
-
-.text-right {
-    text-align: right;
-}
-
-.stock-badge {
-    display: inline-block;
-    padding: 0.375rem 0.75rem;
-    background: #d1fae5;
-    color: #065f46;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.875rem;
-}
-
-.stock-badge.low-stock {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.price-display,
-.subtotal-display {
-    font-weight: 600;
-    color: #374151;
-    font-size: 0.9rem;
-}
-
-.total-amount {
-    color: #667eea;
-    font-size: 1.125rem;
-}
-
-.producto-card {
-    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.25rem;
-    border: 2px solid #e5e7eb;
-}
-
-.producto-card .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid #e5e7eb;
-}
-
-.card-number {
-    font-weight: 700;
-    color: #667eea;
-    font-size: 1rem;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-    margin: 1rem 0;
-    padding: 1rem;
-    background: white;
-    border-radius: 12px;
-}
-
-.info-item {
+.product-select-wrapper {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 
-.info-item .label {
+.medida-badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    background: #f3f4f6;
+    color: #4b5563;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    width: fit-content;
+    font-weight: 600;
+}
+
+.stock-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #dcfce7;
+    color: #166534;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.stock-pill.low {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-icon-danger {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    padding: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon-danger:hover {
+    background: #fee2e2;
+}
+
+.total-row-premium {
+    background: #f9fafb;
+    font-weight: 700;
+}
+
+.total-row-premium td {
+    padding: 1.25rem 1rem;
+    border-top: 2px solid #e5e7eb;
+}
+
+.total-row-premium .value {
+    color: #8B1E1E;
+    font-size: 1.125rem;
+}
+
+.empty-row {
+    padding: 3rem;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+/* Mobile Styles */
+.mobile-actions-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    padding: 1rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 1rem;
+    z-index: 50;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
+}
+
+.mobile-actions-bar .mobile {
+    flex: 1;
+    justify-content: center;
+}
+
+.mobile-card-item {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.mobile-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.product-info-mobile {
+    flex: 1;
+    margin-right: 0.75rem;
+}
+
+.index-badge {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.mobile-grid-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.mobile-field label {
+    display: block;
     font-size: 0.75rem;
     color: #6b7280;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.info-item .value {
-    font-size: 0.9rem;
-    color: #1f2937;
+    margin-bottom: 0.25rem;
     font-weight: 600;
 }
 
-.subtotal-mobile,
-.totales-mobile {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-    border-radius: 12px;
-    margin: 1rem 0;
-}
-
-.totales-mobile {
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.totales-mobile .total-item {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    padding: 0.75rem;
-    background: white;
-    border-radius: 8px;
-}
-
-.subtotal-mobile .label,
-.totales-mobile .label {
-    font-weight: 700;
+.static-value {
+    font-weight: 600;
     color: #374151;
     font-size: 0.9rem;
 }
 
-.subtotal-mobile .value,
-.totales-mobile .value {
+.price-value-lg {
     font-weight: 700;
-    color: #667eea;
-    font-size: 1.125rem;
+    color: #8B1E1E;
+    font-size: 1.1rem;
 }
 
-.totales-generales-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.totales-generales-mobile .total-item {
-    padding: 1.25rem;
+.mobile-summary-card {
+    background: #111827;
+    color: white;
     border-radius: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.totales-generales-mobile .total-item:first-child {
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: white;
-}
-
-.totales-generales-mobile .total-item.total-venta {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
-}
-
-.totales-generales-mobile .label {
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
-}
-
-.totales-generales-mobile .value {
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.subtotal-mobile .value {
-    font-weight: 700;
-    color: #667eea;
-    font-size: 1.125rem;
-}
-
-.total-mobile {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1.5rem;
-    border-radius: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
-}
-
-.total-mobile .label {
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
-}
-
-.total-mobile .value {
-    font-weight: 700;
-    font-size: 1.5rem;
-}
-
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: #9ca3af;
-}
-
-.empty-state p {
-    font-size: 1rem;
-    font-weight: 500;
-    margin-bottom: 1.25rem;
-}
-
-.mobile-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    position: sticky;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 1) 100%);
-    backdrop-filter: blur(10px);
     padding: 1.25rem;
-    border-top: 2px solid #e5e7eb;
-    margin: 0 -2rem;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+    margin-top: 1.5rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    color: #9ca3af;
+    font-size: 0.9rem;
+}
+
+.summary-row.highlight {
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #374151;
+    margin-bottom: 0;
 }
 
 @media (max-width: 768px) {
-    .page-header {
-        padding: 1.25rem;
+    .content-wrapper {
+        padding: 0 1rem;
     }
-
-    .page-title {
-        font-size: 1.375rem;
-    }
-
-    .form-container {
-        padding: 1rem;
-    }
-
-    .form-section {
-        padding: 1.25rem;
+    
+    .page-header-premium {
+        padding: 1.5rem 0;
     }
 
     .form-grid {
         grid-template-columns: 1fr;
     }
-
-    .section-header {
-        flex-direction: column;
-        gap: 1rem;
+    
+    .card-body-premium {
+        padding: 1.5rem 1rem;
     }
 
-    .mobile-actions {
-        margin: 0 -1.25rem;
+    .full-width {
+        grid-column: span 1;
+    }
+
+    .card-title h3 {
+        font-size: 1rem;
     }
 }
 </style>
