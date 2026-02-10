@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Truck, X, FileText } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -50,6 +50,10 @@ const handleSearch = (value: string) => {
 const showModal = ref(false);
 const selectedReq = ref<any>(null);
 
+// Mobile filters state
+const showMobileFilters = ref(false);
+const activeFiltersCount = ref(0);
+
 // Cargar datos
 onMounted(() => {
     store.fetchRequerimientos();
@@ -63,7 +67,155 @@ onMounted(() => {
         <h1 class="view-title">Requerimientos</h1>
         <p class="view-description">Gestiona las solicitudes de compra de madera</p>
 
-        <!-- Tabla con Toolbar Integrado -->
+        <!-- Mobile View -->
+        <div class="mobile-only">
+            <!-- Actions Bar -->
+            <div class="mobile-actions-bar">
+                <button class="btn btn-primary" @click="router.push('/requirements/new')">
+                    <Plus class="icon" />
+                    Nuevo
+                </button>
+
+                <button class="mobile-filter-toggle" @click="showMobileFilters = !showMobileFilters">
+                    <div class="filter-toggle-content">
+                        <Filter :size="18" />
+                        <span>Filtros</span>
+                        <span v-if="activeFiltersCount > 0" class="filter-count-badge">{{ activeFiltersCount }}</span>
+                    </div>
+                    <ChevronDown :size="18" class="chevron-icon" :class="{ 'open': showMobileFilters }" />
+                </button>
+            </div>
+
+            <!-- Mobile Filters Panel -->
+            <div v-show="showMobileFilters" class="mobile-filter-panel">
+                <div class="mobile-filter-item">
+                    <label>Proveedor</label>
+                    <select v-model="filters.id_proveedor" @change="applyFilters">
+                        <option :value="undefined">Todos</option>
+                        <option v-for="prov in proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
+                            {{ prov.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mobile-filter-item">
+                    <label>Mina</label>
+                    <select v-model="filters.id_mina" @change="applyFilters">
+                        <option :value="undefined">Todas</option>
+                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                            {{ mina.nombre }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="mobile-filter-item">
+                    <label>Estado</label>
+                    <select v-model="filters.estado" @change="applyFilters">
+                        <option :value="undefined">Todos</option>
+                        <option value="PENDIENTE">PENDIENTE</option>
+                        <option value="PARCIAL">PARCIAL</option>
+                        <option value="COMPLETADO">COMPLETADO</option>
+                        <option value="ANULADO">ANULADO</option>
+                    </select>
+                </div>
+
+                <div class="mobile-filter-item">
+                    <label>Rango de fechas</label>
+                    <div class="mobile-date-range">
+                        <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" />
+                        <span>-</span>
+                        <input type="date" v-model="filters.fecha_fin" @change="applyFilters" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="mobile-search">
+                <input 
+                    type="text" 
+                    placeholder="Buscar por código..." 
+                    :value="filters.search"
+                    @input="handleSearch(($event.target as HTMLInputElement).value)"
+                />
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="mobile-cards">
+                <div v-for="req in requerimientos" :key="req.id_requerimiento" class="mobile-card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ req.codigo }}</h3>
+                        <span class="badge" :class="`badge-${req.estado?.toLowerCase()}`">
+                            {{ req.estado }}
+                        </span>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="info-row">
+                            <Calendar class="icon-sm" />
+                            <span>{{ new Date(req.fecha_emision).toLocaleDateString() }}</span>
+                        </div>
+                        <div class="info-row">
+                            <Building2 class="icon-sm" />
+                            <span>{{ req.proveedores?.nombre || '---' }}</span>
+                        </div>
+                        <div class="info-row">
+                            <MapPin class="icon-sm" />
+                            <span>{{ req.minas?.nombre || '---' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-actions">
+                        <button 
+                            v-if="req.estado !== 'ANULADO' && req.estado !== 'COMPLETADO'"
+                            @click="router.push(`/viajes/new/${req.id_requerimiento}`)" 
+                            class="btn-card-action primary">
+                            <Truck :size="18" />
+                            Registrar Viaje
+                        </button>
+                        <button @click="openDetails(req)" class="btn-icon">
+                            <FileText :size="20" />
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Empty state -->
+                <div v-if="requerimientos.length === 0 && !loading" class="empty-state-mobile">
+                    <FileText :size="48" style="opacity: 0.3" />
+                    <p>No hay requerimientos</p>
+                </div>
+
+                <!-- Loading skeleton -->
+                <div v-if="loading" class="mobile-cards">
+                    <div v-for="i in 3" :key="i" class="mobile-card skeleton-card">
+                        <div class="skeleton-header"></div>
+                        <div class="skeleton-body"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Pagination -->
+            <div v-if="pagination.totalPages > 1" class="mobile-pagination">
+                <button 
+                    @click="handlePageChange(pagination.page - 1)"
+                    :disabled="pagination.page === 1"
+                    class="pagination-btn">
+                    Anterior
+                </button>
+                <span class="pagination-info">
+                    {{ pagination.page }} / {{ pagination.totalPages }}
+                </span>
+                <button 
+                    @click="handlePageChange(pagination.page + 1)"
+                    :disabled="pagination.page === pagination.totalPages"
+                    class="pagination-btn">
+                    Siguiente
+                </button>
+            </div>
+        </div>
+
+        <!-- Desktop Table (Hidden on Mobile) -->
+        <div class="desktop-only">
+            <!-- Tabla con Toolbar Integrado -->
         <DataTable 
             :columns="columns" 
             :data="requerimientos" 
@@ -254,9 +406,12 @@ onMounted(() => {
                 </footer>
             </div>
         </div>
+    </div>
 </template>
 
 <style scoped>
+@import '../../assets/styles/mobile-cards.css';
+
 .requerimientos-view {
     padding: 2rem;
 }
@@ -531,4 +686,168 @@ onMounted(() => {
 .text-right { text-align: right; }
 .flex-center { display: flex; align-items: center; gap: 0.5rem; }
 .bold { font-weight: 600; }
+
+/* ============================================
+   MOBILE STYLES
+   ============================================ */
+
+@media (max-width: 767px) {
+    .requerimientos-view {
+        padding: 0;
+    }
+
+    .view-title {
+        font-size: 1.5rem;
+        padding: 1.5rem 1rem 0.5rem 1rem;
+    }
+
+    .view-description {
+        padding: 0 1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Mobile Actions Bar */
+   .mobile-actions-bar {
+        display: flex;
+        gap: 8px;
+        padding: 0 1rem 1rem 1rem;
+    }
+
+    .mobile-actions-bar .btn-primary {
+        flex: 1;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+
+    /* Mobile Filter Item */
+    .mobile-filter-item {
+        margin-bottom: 12px;
+    }
+
+    .mobile-filter-item label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .mobile-filter-item select,
+    .mobile-filter-item input {
+        width: 100%;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    .mobile-date-range {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mobile-date-range input {
+        flex: 1;
+    }
+
+    /* Mobile Search */
+    .mobile-search {
+        padding: 0 1rem 12px 1rem;
+    }
+
+    .mobile-search input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    /* Mobile Pagination */
+    .mobile-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: white;
+        border-top: 1px solid var(--border);
+        position: sticky;
+        bottom: 0;
+    }
+
+    .pagination-btn {
+        padding: 10px 20px;
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.2s;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    .pagination-btn:not(:disabled):active {
+        background: var(--border);
+        transform: scale(0.95);
+    }
+
+    .pagination-info {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-muted);
+    }
+
+    /* Mobile Empty State */
+    .empty-state-mobile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+        color: var(--text-muted);
+        text-align: center;
+    }
+
+    .empty-state-mobile p {
+        margin-top: 1rem;
+        font-size: 1rem;
+    }
+
+    /* Skeleton Cards */
+    .skeleton-card {
+        pointer-events: none;
+    }
+
+    .skeleton-header {
+        height: 24px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 12px;
+    }
+
+    .skeleton-body {
+        height: 60px;
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+    }
+
+    @keyframes loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+}
 </style>
