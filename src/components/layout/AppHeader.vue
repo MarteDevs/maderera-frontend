@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { inject } from 'vue';
 import { useAuthStore } from '../../stores/auth.store';
-import { LogOut, User } from 'lucide-vue-next';
+import { LogOut, User, Menu } from 'lucide-vue-next';
 import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { computed } from 'vue';
@@ -8,6 +9,9 @@ import { computed } from 'vue';
 const authStore = useAuthStore();
 const { user } = storeToRefs(authStore);
 const route = useRoute();
+
+// Inyectar el estado del menú móvil
+const mobileMenu = inject<any>('mobileMenu');
 
 const pageTitle = computed(() => (route.meta.title as string) || 'Panel de Control');
 
@@ -18,6 +22,15 @@ const handleLogout = () => {
 
 <template>
     <header class="header">
+        <!-- Botón hamburguesa (solo móvil) -->
+        <button 
+            v-if="mobileMenu?.isMobile.value"
+            class="hamburger-btn"
+            @click="mobileMenu?.toggleMenu()"
+            aria-label="Abrir menú">
+            <Menu class="icon" />
+        </button>
+
         <div class="header-left">
             <!-- Placeholder for Breadcrumbs or Page Title -->
             <h2 class="page-title">{{ pageTitle }}</h2>
@@ -28,7 +41,7 @@ const handleLogout = () => {
                 <div class="avatar">
                     <User class="icon" />
                 </div>
-                <div class="user-info">
+                <div class="user-info mobile-hidden">
                     <span class="username">{{ user?.username || 'Usuario' }}</span>
                     <span class="role">{{ user?.rol || 'Rol' }}</span>
                 </div>
@@ -121,5 +134,65 @@ const handleLogout = () => {
 .icon {
     width: 1.25rem;
     height: 1.25rem;
+}
+
+/* Botón hamburguesa (oculto por defecto) */
+.hamburger-btn {
+    display: none;
+}
+
+/* ============================================
+   RESPONSIVE: MOBILE
+   ============================================ */
+
+@media (max-width: 767px) {
+    .header {
+        padding: 0 1rem; /* Menos padding en móvil */
+    }
+
+    /* Mostrar botón hamburguesa */
+    .hamburger-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        color: var(--text);
+        padding: 0.5rem;
+        border-radius: var(--radius-md);
+        transition: all 0.2s;
+        margin-right: 0.5rem;
+        min-width: 44px; /* Touch target */
+        min-height: 44px;
+    }
+
+    .hamburger-btn:hover {
+        background-color: var(--background);
+    }
+
+    .hamburger-btn .icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+
+    /* Ocultar user info text en móvil */
+    .mobile-hidden {
+        display: none !important;
+    }
+
+    .page-title {
+        font-size: 1rem; /* Texto más pequeño */
+    }
+
+    .header-right {
+        gap: 0.75rem; /* Menos espaciado */
+    }
+}
+
+/* Tablet: mostrar todo */
+@media (min-width: 768px) {
+    .mobile-hidden {
+        display: flex !important;
+    }
 }
 </style>

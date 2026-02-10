@@ -219,4 +219,52 @@ const navigateTo = (path: string) => router.push(path);
 .text-blue { color: #2563EB; }
 .text-emerald { color: #059669; }
 .text-red { color: #DC2626; }
+
+/* ============================================
+   RESPONSIVE STYLES
+   ============================================ */
+
+/* Mobile: < 768px */
+@media (max-width: 767px) {
+    .dashboard-overview {
+        gap: 1.5rem;
+    }
+
+    .hero-banner {
+        padding: 2rem 1.5rem;
+        border-radius: var(--radius-md);
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    .hero-subtitle {
+        font-size: 0.95rem;
+    }
+
+    /* KPI Grid: 1 columna */
+    .kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .kpi-card {
+        padding: 1.25rem;
+    }
+
+    .kpi-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Tablet: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+    }
+}
+
+/* Desktop: >= 1024px (default behavior) */
+/* El grid ya tiene auto-fit que funciona bien en desktop */
 </style>

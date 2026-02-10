@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
-import { computed } from 'vue';
+import { computed, inject } from 'vue';
 import { 
     LayoutDashboard, 
     FileText, 
@@ -8,10 +8,14 @@ import {
     Package, 
     Database,
     Users,
-    Settings
+    Settings,
+    X
 } from 'lucide-vue-next';
 
 const route = useRoute();
+
+// Inyectar el estado del menú móvil
+const mobileMenu = inject<any>('mobileMenu');
 
 // Get user from localStorage
 const user = computed(() => {
@@ -39,10 +43,41 @@ const isActive = (path: string) => {
     }
     return route.path.startsWith(path);
 };
+
+// Cerrar menú al hacer clic en un link (solo en móvil)
+const handleLinkClick = () => {
+    if (mobileMenu?.isMobile.value) {
+        mobileMenu?.closeMenu();
+    }
+};
 </script>
 
 <template>
-    <aside class="sidebar">
+    <!-- Backdrop oscuro para móvil -->
+    <div 
+        v-if="mobileMenu?.isMobileMenuOpen.value && mobileMenu?.isMobile.value"
+        class="sidebar-backdrop"
+        @click="mobileMenu?.closeMenu()"
+    ></div>
+
+    <!-- Sidebar -->
+    <aside 
+        class="sidebar" 
+        :class="{ 
+            'mobile-open': mobileMenu?.isMobileMenuOpen.value,
+            'mobile-closed': !mobileMenu?.isMobileMenuOpen.value && mobileMenu?.isMobile.value
+        }"
+    >
+        <!-- Botón cerrar (solo móvil) -->
+        <button 
+            v-if="mobileMenu?.isMobile.value"
+            class="close-sidebar-btn"
+            @click="mobileMenu?.closeMenu()"
+            aria-label="Cerrar menú"
+        >
+            <X class="icon" />
+        </button>
+
         <div class="sidebar-header">
             <span class="logo">🌲 Madera ERP</span>
         </div>
@@ -54,6 +89,7 @@ const isActive = (path: string) => {
                         :to="item.path" 
                         class="nav-link"
                         :class="{ 'router-link-active': isActive(item.path) }"
+                        @click="handleLinkClick"
                     >
                         <component :is="item.icon" class="icon" />
                         <span>{{ item.label }}</span>
@@ -70,6 +106,7 @@ const isActive = (path: string) => {
                             :to="item.path" 
                             class="nav-link"
                             :class="{ 'router-link-active': isActive(item.path) }"
+                            @click="handleLinkClick"
                         >
                             <component :is="item.icon" class="icon" />
                             <span>{{ item.label }}</span>
@@ -80,7 +117,7 @@ const isActive = (path: string) => {
         </nav>
 
         <div class="sidebar-footer">
-            <RouterLink to="/settings" class="nav-link">
+            <RouterLink to="/settings" class="nav-link" @click="handleLinkClick">
                 <Settings class="icon" />
                 <span>Configuración</span>
             </RouterLink>
@@ -98,6 +135,7 @@ const isActive = (path: string) => {
     flex-direction: column;
     box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
     z-index: 100;
+    position: relative;
 }
 
 .sidebar-header {
@@ -199,5 +237,81 @@ const isActive = (path: string) => {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: rgba(255, 255, 255, 0.4);
+}
+
+/* Botón cerrar sidebar (solo móvil) */
+.close-sidebar-btn {
+    display: none; /* Oculto por defecto */
+}
+
+/* Backdrop para móvil */
+.sidebar-backdrop {
+    display: none; /* Oculto por defecto */
+}
+
+/* ============================================
+   RESPONSIVE: MOBILE
+   ============================================ */
+
+@media (max-width: 767px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    /* Backdrop */
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Botón cerrar */
+    .close-sidebar-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        width: 36px;
+        height: 36px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: var(--radius-md);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 10;
+    }
+
+    .close-sidebar-btn:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+
+    .close-sidebar-btn .icon {
+        width: 1.5rem;
+        height: 1.5rem;
+    }
 }
 </style>
