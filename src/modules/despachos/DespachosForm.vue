@@ -5,7 +5,8 @@ import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
 import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
-import { ArrowLeft, Save, Plus, Trash2, PackageCheck, AlertCircle, ChevronDown, Package } from 'lucide-vue-next';
+import { ArrowLeft, Plus, Trash2, PackageCheck, AlertCircle, ChevronDown, Package } from 'lucide-vue-next';
+import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -151,20 +152,26 @@ const removeDetalle = (index: number) => {
     formData.value.detalles.splice(index, 1);
 };
 
+const formattedProductOptions = computed(() => {
+    return productosConStock.value.map(prod => ({
+        ...prod,
+        full_label: `${prod.producto_nombre} - ${prod.medida_descripcion || 'S/M'}`
+    }));
+});
+
 const onProductoChange = (index: number) => {
     const detalle = formData.value.detalles[index];
-    if (!detalle) return;
+    if (!detalle || !detalle.id_producto) return;
+
+    const producto = inventarioData.value.find(p => p.id_producto === detalle.id_producto);
     
-    const stockInfo = getStockInfo(detalle.id_producto);
-    
-    if (stockInfo) {
-        detalle.id_medida = stockInfo.id_medida;
-        detalle.stock_actual = stockInfo.stock_actual || 0;
-        detalle.precio_compra = stockInfo.precio_compra || 0;
-        detalle.precio_venta = stockInfo.precio_venta || 0;
-        detalle.producto_nombre = stockInfo.producto_nombre;
-        detalle.medida_descripcion = stockInfo.medida_descripcion;
-        
+    if (producto) {
+        detalle.id_medida = producto.id_medida;
+        detalle.stock_actual = producto.stock_actual;
+        detalle.precio_compra = Number(producto.precio_compra);
+        detalle.precio_venta = Number(producto.precio_venta);
+        detalle.producto_nombre = producto.producto_nombre;
+        detalle.medida_descripcion = producto.medida_descripcion;
         calcularSubtotal(index);
     }
 };
@@ -294,13 +301,7 @@ onMounted(async () => {
                             <p class="page-subtitle">Complete la información del despacho</p>
                         </div>
                     </div>
-                    <div class="actions desktop-only">
-                        <button class="btn-ghost" @click="router.back()">Cancelar</button>
-                        <button class="btn-primary-premium" @click="save" :disabled="loading">
-                            <Save class="icon" />
-                            <span>{{ loading ? 'Guardando...' : 'Guardar Despacho' }}</span>
-                        </button>
-                    </div>
+
                 </div>
             </header>
 
@@ -402,23 +403,15 @@ onMounted(async () => {
                                     <tr v-for="(detalle, index) in formData.detalles" :key="index">
                                         <td>
                                             <div class="product-select-wrapper">
-                                                <select 
-                                                    v-model.number="detalle.id_producto" 
+                                                <SearchableSelect 
+                                                    v-model="detalle.id_producto"
+                                                    :options="formattedProductOptions"
+                                                    label-key="full_label"
+                                                    value-key="id_producto"
+                                                    placeholder="Buscar producto..."
+                                                    dense
                                                     @change="onProductoChange(index)"
-                                                    class="form-control-premium dense"
-                                                >
-                                                    <option :value="0">Seleccione Producto</option>
-                                                    <option 
-                                                        v-for="prod in productosConStock" 
-                                                        :key="prod.id_producto" 
-                                                        :value="prod.id_producto"
-                                                    >
-                                                        {{ prod.producto_nombre }} - {{ prod.medida_descripcion || 'S/M' }}
-                                                    </option>
-                                                </select>
-                                                <div v-if="detalle.medida_descripcion" class="medida-badge">
-                                                    {{ detalle.medida_descripcion }}
-                                                </div>
+                                                />
                                             </div>
                                         </td>
                                         <td class="text-center">
@@ -487,18 +480,16 @@ onMounted(async () => {
                         <div class="mobile-only product-list-mobile">
                             <div class="mobile-card-item" v-for="(detalle, index) in formData.detalles" :key="index">
                                 <div class="mobile-card-header">
-                                    <div class="product-info-mobile">
-                                        <span class="index-badge">#{{ index + 1 }}</span>
-                                        <select 
-                                            v-model.number="detalle.id_producto" 
+                                    <div class="form-group-premium">
+                                        <label class="label-premium">Producto</label>
+                                        <SearchableSelect 
+                                            v-model="detalle.id_producto"
+                                            :options="formattedProductOptions"
+                                            label-key="full_label"
+                                            value-key="id_producto"
+                                            placeholder="Buscar producto..."
                                             @change="onProductoChange(index)"
-                                            class="form-control-premium mobile-select"
-                                        >
-                                            <option :value="0">Seleccione Producto</option>
-                                            <option v-for="prod in productosConStock" :key="prod.id_producto" :value="prod.id_producto">
-                                                {{ prod.producto_nombre }} - {{ prod.medida_descripcion || 'S/M' }}
-                                            </option>
-                                        </select>
+                                        />
                                     </div>
                                     <button @click="removeDetalle(index)" class="btn-icon-danger sm">
                                         <Trash2 class="icon-xs" />
@@ -561,10 +552,10 @@ onMounted(async () => {
                 </div>
             </div>
 
-            <!-- Mobile Sticky Actions -->
-            <div class="mobile-actions-bar mobile-only">
-                <button class="btn-ghost mobile" @click="router.back()">Cancelar</button>
-                <button class="btn-primary-premium mobile" @click="save" :disabled="loading">
+            <!-- Sticky Actions Bar -->
+            <div class="form-actions-bar">
+                <button class="btn-ghost" @click="router.back()">Cancelar</button>
+                <button class="btn-primary-premium" @click="save" :disabled="loading">
                     {{ loading ? 'Guardando...' : 'Guardar' }}
                 </button>
             </div>
@@ -838,8 +829,8 @@ onMounted(async () => {
 }
 
 .form-control-premium.dense {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem; /* Reduced to match SearchableSelect */
+    font-size: 0.85rem;
 }
 
 .form-control-premium.textarea {
@@ -896,7 +887,7 @@ onMounted(async () => {
 
 .stock-pill {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.5rem; /* Reduced horizontal padding */
     background: #dcfce7;
     color: #166534;
     border-radius: 9999px;
@@ -913,7 +904,7 @@ onMounted(async () => {
     background: transparent;
     border: none;
     color: #ef4444;
-    padding: 0.5rem;
+    padding: 0.35rem; /* Reduced from 0.5rem */
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s;
@@ -948,24 +939,31 @@ onMounted(async () => {
     font-size: 0.95rem;
 }
 
-/* Mobile Styles */
-.mobile-actions-bar {
+/* Sticky Actions Bar */
+.form-actions-bar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: white;
-    padding: 1rem;
+    padding: 1rem 2rem;
     border-top: 1px solid #e5e7eb;
     display: flex;
+    justify-content: flex-end;
     gap: 1rem;
     z-index: 50;
     box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.03);
 }
 
-.mobile-actions-bar .mobile {
-    flex: 1;
-    justify-content: center;
+@media (max-width: 768px) {
+    .form-actions-bar {
+        padding: 1rem;
+    }
+    
+    .form-actions-bar button {
+        flex: 1;
+        justify-content: center;
+    }
 }
 
 .mobile-card-item {
