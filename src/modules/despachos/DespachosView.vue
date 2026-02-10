@@ -5,7 +5,7 @@ import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar } from 'lucide-vue-next';
+import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X } from 'lucide-vue-next';
 import type { Column } from '../../components/ui/DataTable.vue';
 
 const router = useRouter();
@@ -40,6 +40,7 @@ const showConfirmModal = ref(false);
 const showTransitoModal = ref(false);
 const showEntregarModal = ref(false);
 const showAnularModal = ref(false);
+const showDetailModal = ref(false); // Nuevo modal de detalle
 const selectedDespacho = ref<any>(null);
 const motivoAnulacion = ref('');
 
@@ -119,7 +120,8 @@ const crearDespacho = () => {
 };
 
 const verDetalle = (despacho: any) => {
-    router.push(`/despachos/${despacho.id_despacho}`);
+    selectedDespacho.value = despacho;
+    showDetailModal.value = true;
 };
 
 const editarDespacho = (despacho: any) => {
@@ -188,8 +190,17 @@ onMounted(() => {
 
 <template>
     <div class="despachos-view">
-        <h1 class="view-title">Despachos a Mina</h1>
-        <p class="view-description">Gestión de salidas de madera hacia minas</p>
+        <header class="page-header">
+            <div>
+                <h1 class="page-title">Despachos a Mina</h1>
+                <p class="page-description">Gestión de salidas de madera hacia minas</p>
+            </div>
+            <button @click="crearDespacho" class="btn btn-primary desktop-only">
+                <Plus class="icon-sm" /> Nuevo Despacho
+            </button>
+        </header>
+
+        <div class="content-container">
 
         <!-- Mobile View -->
         <div class="mobile-only">
@@ -218,40 +229,49 @@ onMounted(() => {
 
             <!-- Mobile Filters Panel -->
             <div class="mobile-filter-panel" :class="{ 'panel-open': showMobileFilters }">
-                <div class="mobile-filter-group">
-                    <label>Estado</label>
-                    <select v-model="filters.estado" class="mobile-filter-select">
-                        <option :value="undefined">Todos los Estados</option>
-                        <option value="PREPARANDO">Preparando</option>
-                        <option value="EN_TRANSITO">En Tránsito</option>
-                        <option value="ENTREGADO">Entregado</option>
-                        <option value="ANULADO">Anulado</option>
-                    </select>
+                <div class="filter-header">
+                    <h3>Filtros</h3>
+                    <button @click="showMobileFilters = false" class="btn-icon">
+                        <XCircle class="icon-sm" />
+                    </button>
                 </div>
 
-                <div class="mobile-filter-group">
-                    <label>Mina</label>
-                    <select v-model.number="filters.id_mina" class="mobile-filter-select">
-                        <option :value="undefined">Todas las Minas</option>
-                        <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
-                            {{ mina.nombre }}
-                        </option>
-                    </select>
+                <div class="filter-body">
+                    <div class="form-group">
+                        <label>Estado</label>
+                        <select v-model="filters.estado" class="form-control">
+                            <option :value="undefined">Todos los Estados</option>
+                            <option value="PREPARANDO">Preparando</option>
+                            <option value="EN_TRANSITO">En Tránsito</option>
+                            <option value="ENTREGADO">Entregado</option>
+                            <option value="ANULADO">Anulado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mina</label>
+                        <select v-model.number="filters.id_mina" class="form-control">
+                            <option :value="undefined">Todas las Minas</option>
+                            <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
+                                {{ mina.nombre }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha Desde</label>
+                        <input type="date" v-model="filters.fecha_desde" class="form-control" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha Hasta</label>
+                        <input type="date" v-model="filters.fecha_hasta" class="form-control" />
+                    </div>
                 </div>
 
-                <div class="mobile-filter-group">
-                    <label>Fecha Desde</label>
-                    <input type="date" v-model="filters.fecha_desde" class="mobile-filter-date" />
-                </div>
-
-                <div class="mobile-filter-group">
-                    <label>Fecha Hasta</label>
-                    <input type="date" v-model="filters.fecha_hasta" class="mobile-filter-date" />
-                </div>
-
-                <div class="mobile-filter-actions">
-                    <button @click="clearFilters" class="btn btn-secondary btn-sm">Limpiar</button>
-                    <button @click="applyFilters(); showMobileFilters = false" class="btn btn-primary btn-sm">Aplicar</button>
+                <div class="filter-footer">
+                    <button @click="clearFilters" class="btn btn-secondary btn-full">Limpiar</button>
+                    <button @click="applyFilters(); showMobileFilters = false" class="btn btn-primary btn-full">Aplicar</button>
                 </div>
             </div>
 
@@ -309,7 +329,7 @@ onMounted(() => {
         </div>
 
         <!-- Desktop View -->
-        <div class="desktop-only">
+        <div class="desktop-only table-wrapper">
             <DataTable
                 :columns="columns"
                 :data="despachos"
@@ -323,11 +343,6 @@ onMounted(() => {
                 @search="handleSearch"
                 @page-change="handlePageChange"
             >
-                <template #toolbar-actions>
-                    <button @click="crearDespacho" class="btn btn-primary">
-                        <Plus class="icon-sm" /> Nuevo Despacho
-                    </button>
-                </template>
 
                 <template #toolbar-filters>
                     <div class="filter-item">
@@ -422,6 +437,7 @@ onMounted(() => {
                 </template>
             </DataTable>
         </div>
+    </div>
 
         <!-- Modals -->
         <!-- Confirm Delete Modal -->
@@ -487,35 +503,353 @@ onMounted(() => {
                 </div>
             </div>
         </div>
+
+        <!-- Detalle Despacho Modal -->
+        <div v-if="showDetailModal" class="modal-overlay" @click.self="showDetailModal = false">
+            <div class="modal-content modal-lg">
+                <header class="modal-header">
+                    <h3>Despacho {{ selectedDespacho?.codigo }}</h3>
+                    <button class="btn-close" @click="showDetailModal = false">
+                        <X class="icon" />
+                    </button>
+                </header>
+                
+                <div class="modal-body" v-if="selectedDespacho">
+                    <div class="status-bar">
+                        <span class="badge" :class="getEstadoBadge(selectedDespacho.estado)">
+                            {{ getEstadoLabel(selectedDespacho.estado) }}
+                        </span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Mina</label>
+                            <span>{{ selectedDespacho.minas?.nombre || '---' }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Fecha Creación</label>
+                            <span>{{ new Date(selectedDespacho.fecha_creacion).toLocaleDateString() }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Total Productos</label>
+                            <span>{{ selectedDespacho.despacho_detalles?.length || 0 }}</span>
+                        </div>
+                        <div class="info-item" v-if="selectedDespacho.observaciones">
+                            <label>Observaciones</label>
+                            <span>{{ selectedDespacho.observaciones }}</span>
+                        </div>
+                    </div>
+
+                    <div class="items-list">
+                        <h4>Productos Despachados</h4>
+
+                        <!-- Desktop Table -->
+                        <div class="table-mini-wrapper desktop-only">
+                            <table class="table-mini">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-right">Cantidad</th>
+                                        <th>Observación</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item in selectedDespacho.despacho_detalles" :key="item.id_detalle">
+                                        <td>
+                                            <div class="flex-center">
+                                                <Package class="icon-xs text-gray" />
+                                                {{ item.productos?.nombre }}
+                                                <span class="text-xs text-gray" v-if="item.medidas">
+                                                    ({{ item.medidas?.descripcion }})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right bold">{{ item.cantidad_despachada }}</td>
+                                        <td>{{ item.observacion || '-' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile Cards -->
+                        <div class="product-cards mobile-only">
+                            <div 
+                                v-for="item in selectedDespacho.despacho_detalles" 
+                                :key="item.id_detalle"
+                                class="product-card">
+                                <div class="product-card-header">
+                                    <Package class="icon-sm" />
+                                    <div class="product-name">
+                                        <strong>{{ item.productos?.nombre }}</strong>
+                                        <span class="product-medida" v-if="item.medidas">
+                                            ({{ item.medidas?.descripcion }})
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="product-card-details">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Cantidad:</span>
+                                        <span class="detail-value bold">{{ item.cantidad_despachada }}</span>
+                                    </div>
+                                    <div class="detail-row" v-if="item.observacion">
+                                        <span class="detail-label">Obs:</span>
+                                        <span class="detail-value">{{ item.observacion }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="modal-footer">
+                    <button class="btn btn-secondary" @click="showDetailModal = false">Cerrar</button>
+                    <button 
+                        v-if="canTransito(selectedDespacho)" 
+                        @click="abrirTransitoModal(selectedDespacho); showDetailModal = false" 
+                        class="btn btn-primary">
+                        <TruckIcon class="icon-sm" /> Enviar a Tránsito
+                    </button>
+                </footer>
+            </div>
+        </div>
     </div>
 </template>
 
 <style scoped>
-@import '../../assets/styles/mobile-cards.css';
-
-.despachos-view {
-    padding: var(--spacing-lg);
-}
-
-.view-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: var(--spacing-xs);
-}
-
-.view-description {
-    color: var(--text-muted);
-    margin-bottom: var(--spacing-lg);
-}
-
-.action-buttons {
+/* Page Header */
+.page-header {
     display: flex;
-    gap: var(--spacing-xs);
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.page-title {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+}
+
+.page-description {
+    color: #6b7280;
+    font-size: 1rem;
+}
+
+.content-container {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Cards */
+.mobile-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: 5rem;
+}
+
+.mobile-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.25rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mobile-card:active {
+    transform: scale(0.98);
+}
+
+.mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.mobile-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.card-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.card-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #9ca3af;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.card-value {
+    font-size: 0.95rem;
+    color: #374151;
+    font-weight: 500;
+}
+
+.mobile-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 1rem;
+}
+
+.mobile-card-actions .btn {
+    flex: 1;
     justify-content: center;
 }
 
-/* Modal Styles */
+/* Mobile Filters */
+.mobile-search-bar {
+    margin-bottom: 1rem;
+}
+
+.mobile-search-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    font-size: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.mobile-filter-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    color: #374151;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.filter-toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mobile-filter-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: none;
+    border: 1px solid #e5e7eb;
+}
+
+.mobile-filter-panel.panel-open {
+    display: block;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.filter-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.filter-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-footer {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-full {
+    flex: 1;
+    justify-content: center;
+}
+
+/* FAB */
+.mobile-fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 1.5rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.5);
+    z-index: 50;
+    border: none;
+    transition: transform 0.2s;
+}
+
+.mobile-fab:active {
+    transform: scale(0.95);
+}
+
+/* Desktop */
+.table-wrapper {
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+/* Modals */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -523,6 +857,7 @@ onMounted(() => {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -531,70 +866,324 @@ onMounted(() => {
 
 .modal-content {
     background: white;
-    padding: var(--spacing-lg);
-    border-radius: 12px;
+    padding: 2rem;
+    border-radius: 16px;
     max-width: 500px;
     width: 90%;
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 .modal-content h3 {
-    margin-bottom: var(--spacing-md);
-    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #111827;
 }
 
 .modal-content p {
-    margin-bottom: var(--spacing-md);
-    color: var(--text-muted);
+    color: #4b5563;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
 }
 
 .modal-actions {
     display: flex;
-    gap: var(--spacing-sm);
     justify-content: flex-end;
-    margin-top: var(--spacing-lg);
+    gap: 1rem;
+    margin-top: 2rem;
 }
 
-.form-group {
-    margin-bottom: var(--spacing-md);
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
+/* Badges */
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--text);
+    letter-spacing: 0.025em;
 }
 
-.form-control {
-    width: 100%;
-    padding: var(--spacing-sm);
-    border: 1px solid var(--border);
+.badge-info { background: #dbeafe; color: #1e40af; }
+.badge-warning { background: #fef3c7; color: #92400e; }
+.badge-success { background: #d1fae5; color: #065f46; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 8px;
-    font-family: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
 }
 
-.form-control:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.btn-primary {
+    background-color: #8B1E1E; /* Deep Mahogany */
+    color: white;
 }
 
-.empty-state {
-    text-align: center;
-    padding: var(--spacing-xl);
-    color: var(--text-muted);
+.btn-primary:hover {
+    background-color: #630F0F;
+}
+
+.btn-secondary {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background-color: #d1d5db;
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+}
+
+.btn-success {
+    background-color: #10b981;
+    color: white;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    color: #4b5563;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.btn-icon.btn-primary { color: #8B1E1E; }
+.btn-icon.btn-success { color: #059669; }
+.btn-icon.btn-danger { color: #dc2626; }
+.btn-icon.btn-warning { color: #d97706; }
+
+/* Modal Details */
+.modal-lg {
+    max-width: 1000px;
+    width: 95%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9ca3af;
+    padding: 0.25rem;
+    border-radius: 50%;
+}
+
+.btn-close:hover {
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.status-bar {
+    margin-bottom: 1.5rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.info-item label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #6b7280;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.info-item span {
+    font-weight: 600;
+    color: #111827;
+    font-size: 1rem;
+}
+
+.items-list h4 {
+    margin-bottom: 1rem;
+    color: #374151;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Mini Table */
+.table-mini-wrapper {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table-mini {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-mini th {
+    background: #f9fafb;
+    text-align: left;
+    padding: 1rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #6b7280;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table-mini td {
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 0.95rem;
+    color: #374151;
+}
+
+.table-mini tr:last-child td {
+    border-bottom: none;
+}
+
+.table-mini .text-right { text-align: right; }
+.table-mini .bold { font-weight: 600; }
+
+.flex-center {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.text-gray { color: #6b7280; }
+.text-xs { font-size: 0.85rem; color: #6b7280; }
+
+/* Product Cards (Mobile in Modal) */
+.product-cards {
+    display: none; /* Hidden by default on desktop */
+}
+
+/* ... rest ... */
+
+.modal-footer {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
 }
 
 @media (max-width: 768px) {
+    .product-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .product-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+
+    .product-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .product-name {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-medida {
+        font-size: 0.75rem;
+        color: #6b7280;
+    }
+
+    .product-card-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid #f9fafb;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.875rem;
+    }
+
+    .detail-label { color: #6b7280; }
+    .detail-value { font-weight: 500; color: #111827; }
+
     .despachos-view {
-        padding: var(--spacing-md);
-        padding-bottom: 80px;
+        padding: 1rem;
+    }
+    
+    .page-header {
+        display: none;
+    }
+
+    .content-container {
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
     }
 
     .modal-content {
         max-width: 100%;
-        margin: var(--spacing-md);
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-body {
+        flex: 1;
+        overflow-y: auto;
     }
 }
 </style>
