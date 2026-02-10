@@ -266,7 +266,71 @@
     border-radius: 8px;
     padding: 16px;
     margin-bottom: 16px;
-    animation: slideDown 0.3s ease;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.mobile-filter-panel.panel-open {
+    max-height: 1000px;
+    opacity: 1;
+}
+
+/* Filter groups within panel */
+.mobile-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mobile-filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.mobile-filter-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mobile-filter-select,
+.mobile-filter-date {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    /* Prevent iOS zoom */
+    background: white;
+    color: var(--text);
+    transition: all 0.2s;
+}
+
+.mobile-filter-select:focus,
+.mobile-filter-date:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Mobile date range */
+.mobile-date-range {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mobile-date-range span {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.mobile-date-range .mobile-filter-date {
+    flex: 1;
 }
 
 @keyframes slideDown {

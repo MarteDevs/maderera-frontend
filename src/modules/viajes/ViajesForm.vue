@@ -172,7 +172,9 @@ const showSuccessModal = ref(false);
             <!-- Detalles de Recepción -->
             <div class="form-section">
                 <h3>Detalle de Carga</h3>
-                <div class="table-responsive">
+
+                <!-- Desktop: Table -->
+                <div class="table-responsive desktop-only">
                     <table class="details-table">
                         <thead>
                             <tr>
@@ -212,7 +214,7 @@ const showSuccessModal = ref(false);
                                         <option value="OK">Conforme (OK)</option>
                                         <option value="PARCIAL">Parcial</option>
                                         <option value="MUESTRA">Muestra</option>
-                                        <option value="DA_ADO">Dañado</option>
+                                        <option value="DAÑADO">Dañado</option>
                                         <option value="RECHAZADO">Rechazado</option>
                                     </select>
                                 </td>
@@ -222,6 +224,79 @@ const showSuccessModal = ref(false);
                             </tr>
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Mobile: Product Cards -->
+                <div class="product-cards mobile-only">
+                    <div 
+                        v-for="detalle in formData.detalles" 
+                        :key="detalle.id_detalle_requerimiento"
+                        class="product-card"
+                        :class="{ 'card-completed': detalle.cantidad_pendiente <= 0 }">
+                        
+                        <div class="product-card-header">
+                            <Truck class="icon-sm" />
+                            <div class="product-name">
+                                <strong>{{ detalle.producto_nombre }}</strong>
+                                <span class="product-medida">{{ detalle.unidad_medida }}</span>
+                            </div>
+                        </div>
+
+                        <div class="product-card-body">
+                            <!-- Quantities Grid -->
+                            <div class="quantities-grid">
+                                <div class="quantity-item">
+                                    <label>Solicitado</label>
+                                    <span class="quantity-value">{{ detalle.cantidad_solicitada }}</span>
+                                </div>
+                                <div class="quantity-item highlight">
+                                    <label>Pendiente</label>
+                                    <span class="quantity-value bold">{{ detalle.cantidad_pendiente }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Received Input -->
+                            <div class="form-group-mobile">
+                                <label>Cantidad Recibida</label>
+                                <input 
+                                    v-model.number="detalle.cantidad_recibida" 
+                                    type="number" 
+                                    min="0" 
+                                    class="form-control-mobile"
+                                    :class="{ 'input-active': detalle.cantidad_recibida > 0 }"
+                                    :disabled="detalle.cantidad_pendiente <= 0"
+                                    placeholder="0"
+                                />
+                            </div>
+
+                            <!-- Status Select -->
+                            <div class="form-group-mobile">
+                                <label>Estado de Entrega</label>
+                                <select 
+                                    v-model="detalle.estado_entrega" 
+                                    class="form-control-mobile" 
+                                    :disabled="detalle.cantidad_pendiente <= 0">
+                                    <option value="OK">✓ Conforme (OK)</option>
+                                    <option value="PARCIAL">⚠ Parcial</option>
+                                    <option value="MUESTRA">📦 Muestra</option>
+                                    <option value="DAÑADO">⚠ Dañado</option>
+                                    <option value="RECHAZADO">✗ Rechazado</option>
+                                </select>
+                            </div>
+
+                            <!-- Observation Input -->
+                            <div class="form-group-mobile">
+                                <label>Observación</label>
+                                <input 
+                                    v-model="detalle.observacion" 
+                                    type="text" 
+                                    class="form-control-mobile" 
+                                    placeholder="Notas adicionales..." 
+                                    :disabled="detalle.cantidad_pendiente <= 0" 
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -245,6 +320,8 @@ const showSuccessModal = ref(false);
 </template>
 
 <style scoped>
+@import '../../assets/styles/responsive-forms.css';
+
 .viajes-form-view {
     max-width: 1200px;
     margin: 0 auto;
@@ -529,5 +606,299 @@ const showSuccessModal = ref(false);
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     border-bottom: none;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+
+@media (max-width: 767px) {
+    .viajes-form-view {
+        padding: 0;
+    }
+
+    .page-header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .title-group {
+        width: 100%;
+    }
+
+    .title-group h1 {
+        font-size: 1.5rem;
+    }
+
+    .req-info {
+        font-size: 0.85rem;
+    }
+
+    .form-container {
+        padding: 0;
+    }
+
+    .form-section {
+        margin-bottom: 1rem;
+        border-radius: 0;
+        padding: 1rem;
+    }
+
+    .form-section h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Grid to single column on mobile */
+    .grid-cols-3 {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    /* Table responsive behavior */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .details-table {
+        min-width: 700px; /* Force horizontal scroll for table */
+        font-size: 0.85rem;
+    }
+
+    .details-table th,
+    .details-table td {
+        padding: 0.5rem 0.4rem;
+    }
+
+    .details-table select,
+    .details-table input {
+        font-size: 14px; /* Prevent zoom on iOS */
+        min-width: 60px;
+    }
+
+    .product-info {
+        gap: 4px;
+    }
+
+    .product-info .icon-sm {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Mobile Product Cards */
+    .product-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 0;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border-left: 4px solid var(--primary);
+    }
+
+    .product-card.card-completed {
+        opacity: 0.6;
+        border-left-color: var(--success);
+        background: #f0fdf4;
+    }
+
+    .product-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        background: var(--background);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .product-card-header .icon-sm {
+        color: var(--primary);
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+    }
+
+    .product-name {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+    }
+
+    .product-name strong {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.3;
+    }
+
+    .product-medida {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .product-card-body {
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    /* Quantities Grid */
+    .quantities-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .quantity-item {
+        background: var(--background);
+        padding: 10px;
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .quantity-item.highlight {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+    }
+
+    .quantity-item label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .quantity-value {
+        display: block;
+        font-size: 1.25rem;
+        color: var(--text);
+        font-weight: 600;
+    }
+
+    .quantity-value.bold {
+        font-size: 1.5rem;
+        color: #f59e0b;
+    }
+
+    /* Mobile Form Groups */
+    .form-group-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group-mobile label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text);
+    }
+
+    .form-control-mobile {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 16px; /* Prevent iOS zoom */
+        background: white;
+        transition: all 0.2s;
+    }
+
+    .form-control-mobile:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-control-mobile:disabled {
+        background: var(--background);
+        color: var(--text-muted);
+        cursor: not-allowed;
+    }
+
+    .form-control-mobile.input-active {
+        border-color: var(--primary);
+        background: #eff6ff;
+    }
+
+    select.form-control-mobile {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 36px;
+    }
+
+    /* Form actions */
+    .form-actions {
+        padding: 1rem;
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+
+    .form-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-back {
+        width: auto;
+        padding: 0.5rem;
+    }
+
+    /* Success modal full-screen on mobile */
+    .modal-overlay {
+        padding: 1rem;
+    }
+
+    .success-modal {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .success-icon-wrapper svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .success-modal h2 {
+        font-size: 1.3rem;
+    }
+
+    .success-modal p {
+        font-size: 0.95rem;
+    }
+
+    .full-width-btn {
+        width: 100%;
+    }
+
+    /* Loading state */
+    .loading-state {
+        padding: 2rem 1rem;
+        font-size: 0.95rem;
+    }
 }
 </style>
