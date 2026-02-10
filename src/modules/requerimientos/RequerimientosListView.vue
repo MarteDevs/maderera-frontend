@@ -365,7 +365,9 @@ onMounted(() => {
 
                     <div class="items-list">
                         <h4>Detalle de Productos</h4>
-                        <div class="table-mini-wrapper">
+
+                        <!-- Desktop: Table -->
+                        <div class="table-mini-wrapper desktop-only">
                             <table class="table-mini">
                                 <thead>
                                     <tr>
@@ -392,6 +394,38 @@ onMounted(() => {
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Mobile: Product Cards -->
+                        <div class="product-cards mobile-only">
+                            <div 
+                                v-for="item in selectedReq.requerimiento_detalles" 
+                                :key="item.id_detalle"
+                                class="product-card">
+                                <div class="product-card-header">
+                                    <FileText class="icon-sm" />
+                                    <div class="product-name">
+                                        <strong>{{ item.productos?.nombre }}</strong>
+                                        <span class="product-medida" v-if="item.productos?.medidas || item.productos?.medida">
+                                            ({{ item.productos.medidas?.descripcion || item.productos.medida?.descripcion }})
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="product-card-details">
+                                    <div class="detail-row">
+                                        <span class="detail-label">Cantidad:</span>
+                                        <span class="detail-value bold">{{ item.cantidad_solicitada }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Precio Proveedor:</span>
+                                        <span class="detail-value">S/. {{ item.precio_proveedor }}</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span class="detail-label">Precio Mina:</span>
+                                        <span class="detail-value">S/. {{ item.precio_mina }}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -848,6 +882,185 @@ onMounted(() => {
         100% {
             background-position: -200% 0;
         }
+    }
+}
+
+/* ============================================
+   MODAL RESPONSIVE (MOBILE)
+   ============================================ */
+
+@media (max-width: 767px) {
+    /* Full-screen modal on mobile */
+    .modal-overlay {
+        padding: 0;
+        align-items: stretch;
+    }
+
+    .modal-content {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+        width: 100%;
+        height: 100%;
+    }
+
+    .modal-header {
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+    }
+
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    .info-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+
+    .info-item {
+        padding: 0.75rem;
+        background: var(--background);
+        border-radius: 8px;
+    }
+
+    .info-item label {
+        font-size: 0.8rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-item span {
+        font-size: 0.95rem;
+    }
+
+    /* Product cards for mobile */
+    .product-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .product-card {
+        background: var(--background);
+        border-radius: 8px;
+        padding: 12px;
+        border-left: 3px solid var(--primary);
+    }
+
+    .product-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .product-card-header .icon-sm {
+        color: var(--text-muted);
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .product-name {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex: 1;
+    }
+
+    .product-name strong {
+        font-size: 0.95rem;
+        color: var(--text);
+    }
+
+    .product-medida {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .product-card-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+
+    .detail-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .detail-value {
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .detail-value.bold {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    /* Convert product table to cards on mobile */
+    .table-mini-wrapper {
+        overflow: visible;
+    }
+
+    .table-mini {
+        display: none; /* Hide table on mobile */
+    }
+
+    /* Product cards for mobile */
+    .items-list {
+        margin-top: 1.5rem;
+    }
+
+    .items-list h4 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Create mobile product cards */
+    .table-mini-wrapper::after {
+        content: '';
+        display: block;
+    }
+
+    .modal-footer {
+        padding: 1rem;
+        position: sticky;
+        bottom: 0;
+        background: white;
+        border-top: 2px solid var(--border);
+    }
+
+    .modal-footer button {
+        width: 100%;
+        padding: 0.875rem;
+    }
+
+    /* Status badge in modal */
+    .status-bar {
+        margin-bottom: 1rem;
+    }
+
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 0.35rem 0.85rem;
     }
 }
 </style>

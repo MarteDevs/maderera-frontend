@@ -304,6 +304,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
+@import '../../assets/styles/responsive-forms.css';
+
 .requerimientos-form {
     max-width: 1000px;
     margin: 0 auto;
@@ -470,4 +472,103 @@ onMounted(() => {
 
 .icon { width: 1.25rem; height: 1.25rem; }
 .icon-sm { width: 1rem; height: 1rem; }
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
+
+@media (max-width: 767px) {
+    .requerimientos-form {
+        padding: 0;
+    }
+
+    .page-header {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .form-container {
+        padding: 0;
+    }
+
+    .form-section {
+        margin-bottom: 1rem;
+        border-radius: 0;
+    }
+
+    .form-section h3 {
+        font-size: 1.1rem;
+    }
+
+    /* Grid to single column on mobile */
+    .grid-cols-3 {
+        grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .full-width {
+        grid-column: 1 / -1;
+    }
+
+    /* Table responsive behavior */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .details-table {
+        min-width: 600px; /* Force horizontal scroll for table */
+        font-size: 0.85rem;
+    }
+
+    .details-table th,
+    .details-table td {
+        padding: 0.5rem 0.4rem;
+    }
+
+    .details-table select,
+    .details-table input {
+        font-size: 14px; /* Prevent zoom on iOS */
+    }
+
+    /* Form actions */
+    .form-actions {
+        padding: 1rem;
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+
+    .form-actions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-back {
+        width: auto;
+        padding: 0.5rem;
+    }
+
+    /* Section header for mobile */
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .section-header button {
+        width: 100%;
+        justify-content: center;
+    }
+}
 </style>
