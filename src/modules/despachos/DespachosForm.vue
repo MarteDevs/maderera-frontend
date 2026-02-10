@@ -842,7 +842,7 @@ onMounted(async () => {
 .table-wrapper-premium {
     border: 1px solid #e5e7eb;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden to allow dropdowns to spill out */
 }
 
 .table-premium {
