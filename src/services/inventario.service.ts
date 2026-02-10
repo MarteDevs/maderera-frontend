@@ -20,7 +20,7 @@ export const inventarioService = {
         limit: number;
         data: Stock[];
     }> {
-        const response = await api.get('/inventory/stock', { params: filters });
+        const response = await api.get('/inventory', { params: filters });
         return response.data.data;
     },
 

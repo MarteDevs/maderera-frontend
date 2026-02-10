@@ -9,7 +9,8 @@ import {
     Database,
     Users,
     Settings,
-    X
+    X,
+    TruckIcon
 } from 'lucide-vue-next';
 
 const route = useRoute();
@@ -29,6 +30,7 @@ const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Requerimientos', path: '/requirements', icon: FileText },
     { label: 'Viajes', path: '/viajes', icon: Truck },
+    { label: 'Despachos', path: '/despachos', icon: TruckIcon },
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
 ];

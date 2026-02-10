@@ -66,6 +66,24 @@ const routes = [
                 meta: { title: 'Inventario' }
             },
             {
+                path: 'despachos',
+                name: 'Despachos',
+                component: () => import('../modules/despachos/DespachosView.vue'),
+                meta: { title: 'Despachos' }
+            },
+            {
+                path: 'despachos/nuevo',
+                name: 'NuevoDespacho',
+                component: () => import('../modules/despachos/DespachosForm.vue'),
+                meta: { title: 'Nuevo Despacho' }
+            },
+            {
+                path: 'despachos/:id/editar',
+                name: 'EditarDespacho',
+                component: () => import('../modules/despachos/DespachosForm.vue'),
+                meta: { title: 'Editar Despacho' }
+            },
+            {
                 path: 'usuarios',
                 name: 'Usuarios',
                 component: () => import('../modules/usuarios/UsuariosListView.vue'),
