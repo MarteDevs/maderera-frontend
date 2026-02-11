@@ -11,6 +11,7 @@ import {
     Settings,
     X,
     TruckIcon,
+    BarChart3,
 } from 'lucide-vue-next';
 
 
@@ -34,6 +35,7 @@ const menuItems = [
     { label: 'Despachos', path: '/despachos', icon: TruckIcon },
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
+    { label: 'Reportes', path: '/reportes', icon: BarChart3 },
 ];
 
 const adminMenuItems = [
