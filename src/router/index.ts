@@ -89,6 +89,12 @@ const routes = [
                 component: () => import('../modules/usuarios/UsuariosListView.vue'),
                 meta: { title: 'Gestión de Usuarios', requiresRole: 'ADMIN' }
             },
+            {
+                path: 'reportes',
+                name: 'Reportes',
+                component: () => import('../modules/reportes/ReportesView.vue'),
+                meta: { title: 'Reportes y Analítica' }
+            },
             // Future routes will go here
         ]
     },

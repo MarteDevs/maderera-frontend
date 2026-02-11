@@ -10,8 +10,9 @@ import {
     Users,
     Settings,
     X,
-    TruckIcon
+    TruckIcon,
 } from 'lucide-vue-next';
+
 
 const route = useRoute();
 
