@@ -6,8 +6,108 @@ import { useMaestrosStore } from '../../stores/maestros.store';
 import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X } from 'lucide-vue-next';
+import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X, FileText } from 'lucide-vue-next';
 import type { Column } from '../../components/ui/DataTable.vue';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const generatePDF = () => {
+    if (!selectedDespacho.value) return;
+
+    const doc = new jsPDF();
+    const despacho = selectedDespacho.value;
+
+    // Header
+    doc.setFontSize(20);
+    doc.text(`Despacho ${despacho.codigo}`, 14, 20);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Fecha: ${new Date(despacho.fecha_creacion).toLocaleDateString()}`, 14, 28);
+    
+    // Status
+    if (despacho.estado === 'ENTREGADO') {
+        doc.setFillColor(220, 220, 220);
+        doc.setTextColor(22, 163, 74); // Greenish
+    } else {
+        doc.setFillColor(253, 253, 253);
+        doc.setTextColor(50, 50, 50);
+    }
+    // Simple text for status for now, or just skip simulated badge to keep it clean
+    doc.text(`Estado: ${despacho.estado}`, 150, 20);
+    doc.setTextColor(0);
+
+    // Info Card Simulation
+    doc.setDrawColor(200);
+    doc.setFillColor(250, 250, 250);
+    doc.rect(14, 35, 182, 25, 'F');
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text('MINA DESTINO', 20, 42);
+    doc.text('SUPERVISOR', 80, 42);
+    doc.text('TOTAL PRODUCTOS', 140, 42);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0);
+    doc.text(despacho.minas?.nombre || '---', 20, 50);
+    doc.text(despacho.supervisores?.nombre || '---', 80, 50);
+    doc.text(String(despacho.despacho_detalles?.length || 0), 140, 50);
+
+    // Table
+    const tableBody = despacho.despacho_detalles.map((item: any) => [
+        `${item.productos?.nombre} ${item.medidas ? '(' + item.medidas.descripcion + ')' : ''}`,
+        item.cantidad_despachada,
+        `S/. ${Number(item.precio_compra).toFixed(2)}`,
+        `S/. ${(Number(item.cantidad_despachada) * Number(item.precio_compra)).toFixed(2)}`,
+        `S/. ${Number(item.precio_venta).toFixed(2)}`,
+        `S/. ${(Number(item.cantidad_despachada) * Number(item.precio_venta)).toFixed(2)}`,
+    ]);
+
+    // Totals
+    const totalCompra = despacho.despacho_detalles.reduce((acc: number, item: any) => acc + (Number(item.cantidad_despachada) * Number(item.precio_compra)), 0);
+    const totalVenta = despacho.despacho_detalles.reduce((acc: number, item: any) => acc + (Number(item.cantidad_despachada) * Number(item.precio_venta)), 0);
+
+    autoTable(doc, {
+        startY: 65,
+        head: [['Producto', 'Cant.', 'P. Compra', 'T. Compra', 'P. Venta', 'T. Venta']],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { fillColor: [139, 30, 30], textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { halign: 'center' },
+            2: { halign: 'right' },
+            3: { halign: 'right' },
+            4: { halign: 'right' },
+            5: { halign: 'right', fontStyle: 'bold' }
+        },
+        foot: [[
+            'Totales Generales', 
+            '', 
+            '', 
+            `S/. ${totalCompra.toFixed(2)}`, 
+            '', 
+            `S/. ${totalVenta.toFixed(2)}`
+        ]],
+        footStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' }
+    });
+
+    if (despacho.observaciones) {
+        const finalY = (doc as any).lastAutoTable.finalY || 150;
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text('Observaciones:', 14, finalY + 10);
+        doc.setTextColor(0);
+        doc.text(despacho.observaciones, 14, finalY + 16, { maxWidth: 180 });
+    }
+
+    doc.save(`Despacho-${despacho.codigo}.pdf`);
+};
+
+
+
 
 const router = useRouter();
 const despachosStore = useDespachosStore();
@@ -671,6 +771,9 @@ onMounted(() => {
                 </div>
 
                 <footer class="modal-footer">
+                    <button class="btn btn-secondary" @click="generatePDF">
+                        <FileText class="icon-sm" /> Crear PDF
+                    </button>
                     <button class="btn btn-secondary" @click="showDetailModal = false">Cerrar</button>
                     <button 
                         v-if="canTransito(selectedDespacho)" 
