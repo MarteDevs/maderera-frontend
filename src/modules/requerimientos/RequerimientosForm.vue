@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { ArrowLeft, Save, Plus, Trash } from 'lucide-vue-next';
@@ -157,6 +157,56 @@ const formattedProductOptions = computed(() => {
     }));
 });
 
+// Focus Refs
+const proveedorRef = ref<any>(null);
+const minaRef = ref<any>(null);
+const supervisorRef = ref<any>(null);
+const fechaEmisionRef = ref<HTMLInputElement | null>(null);
+const fechaPrometidaRef = ref<HTMLInputElement | null>(null);
+const observacionRef = ref<HTMLTextAreaElement | null>(null);
+
+// Refs for dynamic rows (Map: rowIndex -> { fieldName: element })
+const detailRefs = ref(new Map<number, { [key: string]: HTMLElement | any }>());
+
+const setDetailRef = (el: any, rowIndex: number, field: string) => {
+    if (el) {
+        if (!detailRefs.value.has(rowIndex)) {
+            detailRefs.value.set(rowIndex, {});
+        }
+        detailRefs.value.get(rowIndex)![field] = el;
+    }
+};
+
+const focusNext = (nextRef: any) => {
+    if (nextRef && nextRef.value) {
+        if (typeof nextRef.value.focus === 'function') {
+            nextRef.value.focus();
+        } else if (nextRef.value.$el && typeof nextRef.value.$el.querySelector === 'function') {
+            // For components like SearchableSelect
+             const input = nextRef.value.$el.querySelector('input');
+             if (input) input.focus();
+        }
+    } else if (nextRef) {
+          // Direct element ref or component proxy
+         if (typeof nextRef.focus === 'function') {
+            nextRef.focus();
+        } else if (nextRef.$el) {
+             const input = nextRef.$el.querySelector('input');
+             if (input) input.focus();
+        }
+    }
+};
+
+const handleProdSelectFocus = (index: number) => {
+    // Focus Cantidad input for this row
+    const rowRefs = detailRefs.value.get(index);
+    if (rowRefs && rowRefs['cantidad']) {
+        nextTick(() => {
+            rowRefs['cantidad'].focus();
+        });
+    }
+};
+
 const save = async () => {
     saving.value = true;
     try {
@@ -203,6 +253,10 @@ onMounted(() => {
     // Cargar listas de maestros
     cargarMaestros();
     addDetalle(); // Agregar una línea vacía por defecto
+    // Focus first field
+    if (proveedorRef.value) {
+        proveedorRef.value.focus();
+    }
 });
 </script>
 
@@ -222,42 +276,79 @@ onMounted(() => {
                 <div class="grid-cols-3">
                     <div class="form-group">
                         <label>Proveedor</label>
-                        <select v-model="formData.id_proveedor" class="form-control" @change="handleProveedorChange">
-                            <option value="">Seleccione...</option>
-                            <option v-for="m in proveedores" :key="m.id_proveedor" :value="m.id_proveedor">{{ m.nombre }}</option>
-                        </select>
+                        <SearchableSelect
+                            ref="proveedorRef"
+                            v-model="formData.id_proveedor"
+                            :options="proveedores"
+                            label-key="nombre"
+                            value-key="id_proveedor"
+                            placeholder="Seleccione..."
+                            @change="handleProveedorChange"
+                            @next="focusNext(minaRef)"
+                            @select="focusNext(minaRef)"
+                        />
                     </div>
 
                     <div class="form-group">
                         <label>Mina</label>
-                        <select v-model="formData.id_mina" class="form-control">
-                            <option value="">Seleccione...</option>
-                            <option v-for="m in minas" :key="m.id_mina" :value="m.id_mina">{{ m.nombre }}</option>
-                        </select>
+                        <SearchableSelect
+                            ref="minaRef"
+                            v-model="formData.id_mina"
+                            :options="minas"
+                            label-key="nombre"
+                            value-key="id_mina"
+                            placeholder="Seleccione..."
+                            @next="focusNext(supervisorRef)"
+                            @select="focusNext(supervisorRef)"
+                        />
                     </div>
 
                     <div class="form-group">
                         <label>Supervisor</label>
-                        <select v-model="formData.id_supervisor" class="form-control">
-                            <option value="">Seleccione...</option>
-                            <option v-for="m in supervisores" :key="m.id_supervisor" :value="m.id_supervisor">{{ m.nombre }}</option>
-                        </select>
+                        <SearchableSelect
+                            ref="supervisorRef"
+                            v-model="formData.id_supervisor"
+                            :options="supervisores"
+                            label-key="nombre"
+                            value-key="id_supervisor"
+                            placeholder="Seleccione..."
+                            @next="focusNext(fechaEmisionRef)"
+                            @select="focusNext(fechaEmisionRef)"
+                        />
                     </div>
 
                     <div class="form-group">
                         <label>Fecha de Emisión</label>
-                        <input type="date" v-model="formData.fecha_emision" class="form-control" />
+                        <input 
+                            ref="fechaEmisionRef"
+                            type="date" 
+                            v-model="formData.fecha_emision" 
+                            class="form-control"
+                            @keydown.enter.prevent="focusNext(fechaPrometidaRef)" 
+                        />
                     </div>
 
                     <div class="form-group">
                         <label>Fecha Prometida</label>
-                        <input type="date" v-model="formData.fecha_prometida" class="form-control" />
+                        <input 
+                            ref="fechaPrometidaRef"
+                            type="date" 
+                            v-model="formData.fecha_prometida" 
+                            class="form-control"
+                            readonly 
+                            @keydown.enter.prevent="focusNext(observacionRef)"
+                        />
                     </div>
                 </div>
 
                 <div class="form-group full-width">
                     <label>Observaciones</label>
-                    <textarea v-model="formData.observaciones" class="form-control" rows="2"></textarea>
+                    <textarea 
+                        ref="observacionRef"
+                        v-model="formData.observaciones" 
+                        class="form-control" 
+                        rows="2"
+                    ></textarea>
                 </div>
             </div>
 
@@ -293,19 +384,57 @@ onMounted(() => {
                                         placeholder="Producto..."
                                         dense
                                         @change="handleProductChange(detalle)"
+                                        @select="handleProdSelectFocus(index)"
+                                        @next="handleProdSelectFocus(index)"
                                     />
                                 </td>
                                 <td>
-                                    <input type="number" v-model="detalle.cantidad_solicitada" class="form-control dense text-right" min="1" />
+                                    <input 
+                                        :ref="(el) => setDetailRef(el, index, 'cantidad')"
+                                        type="number" 
+                                        v-model="detalle.cantidad_solicitada" 
+                                        class="form-control dense text-right" 
+                                        min="1" 
+                                        @keydown.enter.prevent="() => {
+                                             const refs = detailRefs.get(index);
+                                             if (refs && refs['precio_prov']) refs['precio_prov'].focus();
+                                        }"
+                                    />
                                 </td>
                                 <td>
-                                    <input type="number" v-model="detalle.precio_proveedor" class="form-control dense text-right" step="0.01" />
+                                    <input 
+                                        :ref="(el) => setDetailRef(el, index, 'precio_prov')"
+                                        type="number" 
+                                        v-model="detalle.precio_proveedor" 
+                                        class="form-control dense text-right" 
+                                        step="0.01" 
+                                        @keydown.enter.prevent="() => {
+                                             const refs = detailRefs.get(index);
+                                             if (refs && refs['precio_mina']) refs['precio_mina'].focus();
+                                        }"
+                                    />
                                 </td>
                                 <td>
-                                    <input type="number" v-model="detalle.precio_mina" class="form-control dense text-right" step="0.01" />
+                                    <input 
+                                        :ref="(el) => setDetailRef(el, index, 'precio_mina')"
+                                        type="number" 
+                                        v-model="detalle.precio_mina" 
+                                        class="form-control dense text-right" 
+                                        step="0.01" 
+                                        @keydown.enter.prevent="() => {
+                                             const refs = detailRefs.get(index);
+                                             if (refs && refs['obs']) refs['obs'].focus();
+                                        }"
+                                    />
                                 </td>
                                 <td>
-                                    <input type="text" v-model="detalle.observacion" class="form-control dense" />
+                                    <input 
+                                        :ref="(el) => setDetailRef(el, index, 'obs')"
+                                        type="text" 
+                                        v-model="detalle.observacion" 
+                                        class="form-control dense" 
+                                        @keydown.enter.prevent
+                                    />
                                 </td>
                                 <td>
                                     <button class="btn-icon danger" @click="removeDetalle(index)">

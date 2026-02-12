@@ -37,7 +37,7 @@ const props = defineProps({
     }
 });
 
-const emit = defineEmits(['update:modelValue', 'change']);
+const emit = defineEmits(['update:modelValue', 'change', 'select', 'next']);
 
 const isOpen = ref(false);
 const searchQuery = ref('');
@@ -75,8 +75,13 @@ const filteredOptions = computed(() => {
     );
 });
 
-watch(filteredOptions, () => {
-    highlightedIndex.value = -1;
+watch(filteredOptions, (newOptions) => {
+    // Auto-highlight first option when filtering changes to allow quick "Enter" selection
+    if (newOptions.length > 0 && searchQuery.value) {
+        highlightedIndex.value = 0;
+    } else {
+        highlightedIndex.value = -1;
+    }
 });
 
 const updateDropdownPosition = () => {
@@ -105,6 +110,7 @@ const toggleDropdown = async () => {
 const selectOption = (option: Option) => {
     emit('update:modelValue', option[props.valueKey]);
     emit('change', option);
+    emit('select', option);
     searchQuery.value = option[props.labelKey];
     isOpen.value = false;
     highlightedIndex.value = -1;
@@ -159,6 +165,9 @@ const onKeydown = (e: KeyboardEvent) => {
                 if (optionToSelect) {
                     selectOption(optionToSelect);
                 }
+            } else {
+                // If closed and enter is pressed, emit next to move focus
+                emit('next'); 
             }
             break;
         case 'Escape':
@@ -214,6 +223,11 @@ const onFocus = () => {
     }
 };
 
+const focus = () => {
+    inputRef.value?.focus();
+};
+
+defineExpose({ focus });
 </script>
 
 <template>
