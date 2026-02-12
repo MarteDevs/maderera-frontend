@@ -140,6 +140,11 @@ export const medidasService = {
         const response = await api.get('/products/medidas');
         return response.data.data;
     },
+
+    async create(data: { descripcion: string }): Promise<Medida> {
+        const response = await api.post('/products/medidas', data);
+        return response.data.data;
+    },
 };
 
 // ============================================

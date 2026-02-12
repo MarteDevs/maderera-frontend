@@ -34,10 +34,14 @@ const props = defineProps({
     dense: {
         type: Boolean,
         default: false
+    },
+    creatable: {
+        type: Boolean,
+        default: false
     }
 });
 
-const emit = defineEmits(['update:modelValue', 'change', 'select', 'next']);
+const emit = defineEmits(['update:modelValue', 'change', 'select', 'next', 'create']);
 
 const isOpen = ref(false);
 const searchQuery = ref('');
@@ -54,7 +58,10 @@ watch(() => props.modelValue, (newVal) => {
         if (selected) {
             searchQuery.value = selected[props.labelKey];
         } else if (!isOpen.value) {
-            searchQuery.value = '';
+            // Keep query if we are creating
+             if (!props.creatable) {
+                searchQuery.value = '';
+             }
         }
     } else if (!isOpen.value) {
         searchQuery.value = '';
@@ -64,6 +71,7 @@ watch(() => props.modelValue, (newVal) => {
 const filteredOptions = computed(() => {
     if (!searchQuery.value) return props.options;
     
+    // Exact match check logic
     const selected = props.options.find(opt => opt[props.valueKey] === props.modelValue);
     if (selected && selected[props.labelKey] === searchQuery.value) {
         return props.options;
@@ -78,6 +86,9 @@ const filteredOptions = computed(() => {
 watch(filteredOptions, (newOptions) => {
     // Auto-highlight first option when filtering changes to allow quick "Enter" selection
     if (newOptions.length > 0 && searchQuery.value) {
+        highlightedIndex.value = 0;
+    } else if (props.creatable && searchQuery.value) {
+        // Highlight creation option if no results
         highlightedIndex.value = 0;
     } else {
         highlightedIndex.value = -1;
@@ -122,6 +133,12 @@ const selectOption = (option: Option) => {
     highlightedIndex.value = -1;
 };
 
+const handleCreate = () => {
+    if (!props.creatable || !searchQuery.value) return;
+    emit('create', searchQuery.value);
+    isOpen.value = false;
+};
+
 const clearSelection = (e: Event) => {
     e.stopPropagation();
     emit('update:modelValue', null);
@@ -142,6 +159,10 @@ const scrollSelectedIntoView = (index: number) => {
 const onKeydown = (e: KeyboardEvent) => {
     if (props.disabled) return;
 
+    // Calculate total items including creation option
+    const showCreate = props.creatable && searchQuery.value && filteredOptions.value.length === 0;
+    const totalItems = filteredOptions.value.length + (showCreate ? 1 : 0);
+
     switch (e.key) {
         case 'ArrowDown':
             e.preventDefault();
@@ -149,7 +170,7 @@ const onKeydown = (e: KeyboardEvent) => {
                 toggleDropdown();
                 highlightedIndex.value = 0;
             } else {
-                if (highlightedIndex.value < filteredOptions.value.length - 1) {
+                 if (highlightedIndex.value < totalItems - 1) {
                     highlightedIndex.value++;
                     scrollSelectedIntoView(highlightedIndex.value);
                 }
@@ -167,9 +188,17 @@ const onKeydown = (e: KeyboardEvent) => {
         case 'Enter':
             e.preventDefault();
             if (isOpen.value) {
+                // Check if selecting "Create" option
+                 if (showCreate && highlightedIndex.value === 0) {
+                    handleCreate();
+                    return;
+                }
+
                 const optionToSelect = filteredOptions.value[highlightedIndex.value] || filteredOptions.value[0];
                 if (optionToSelect) {
                     selectOption(optionToSelect);
+                } else if (showCreate) {
+                     handleCreate();
                 }
             } else {
                 // If closed and enter is pressed, emit next to move focus
@@ -198,7 +227,9 @@ const handleClickOutside = (event: MouseEvent) => {
         if (selected) {
             searchQuery.value = selected[props.labelKey];
         } else {
-            searchQuery.value = '';
+             if (!props.creatable) {
+                searchQuery.value = '';
+             }
         }
     }
 };
@@ -284,7 +315,19 @@ defineExpose({ focus });
                         <Check v-if="option[valueKey] === modelValue" class="icon-check" />
                     </div>
                 </template>
-                <div v-else class="no-results">
+                
+                <!-- Creation Option -->
+                <div 
+                    v-if="creatable && searchQuery && filteredOptions.length === 0"
+                    class="dropdown-item create-option"
+                    :class="{ 'highlighted': highlightedIndex === 0 }"
+                    @click="handleCreate"
+                >
+                    <span>Agregar "{{ searchQuery }}"</span>
+                    <span class="badge-new">Nuevo</span>
+                </div>
+
+                <div v-if="filteredOptions.length === 0 && (!creatable || !searchQuery)" class="no-results">
                     No se encontraron resultados
                 </div>
             </div>
@@ -441,5 +484,26 @@ defineExpose({ focus });
     width: 16px;
     height: 16px;
     color: #8B1E1E;
+}
+
+.dropdown-menu-teleported .create-option {
+    border-top: 1px dashed #e5e7eb;
+    margin-top: 0.25rem;
+    color: #2563eb; /* Blue for action */
+    font-weight: 500;
+}
+
+.dropdown-menu-teleported .create-option:hover,
+.dropdown-menu-teleported .create-option.highlighted {
+    background: #eff6ff;
+}
+
+.badge-new {
+    font-size: 0.7rem;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
 }
 </style>

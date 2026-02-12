@@ -3,12 +3,24 @@ import { ref, onMounted, computed } from 'vue';
 import { Plus, Edit, Trash2 } from 'lucide-vue-next';
 import { useMaestrosStore } from '../../../stores';
 import { DataTable, FormModal, ConfirmDialog } from '../../../components/ui';
+import SearchableSelect from '../../../components/ui/SearchableSelect.vue';
 import type { Column } from '../../../components/ui/DataTable.vue';
 import type { Producto } from '../../../types/models';
 
 console.log('🚀 ProductosListView: Componente cargado');
 
 const maestrosStore = useMaestrosStore();
+
+const handleCreateMedida = async (newMedidaLabel: string) => {
+    try {
+        const nuevaMedida = await maestrosStore.createMedida(newMedidaLabel);
+        if (nuevaMedida) {
+             formData.value.id_medida = nuevaMedida.id_medida;
+        }
+    } catch (e) {
+        console.error('Error creating medida inline:', e);
+    }
+};
 
 // Estado
 const showFormModal = ref(false);
@@ -242,12 +254,15 @@ const handlePageChange = (page: number) => {
                 <div class="form-row">
                     <div class="form-group">
                         <label for="medida">Medida *</label>
-                        <select id="medida" v-model.number="formData.id_medida" required>
-                            <option :value="0" disabled>Seleccionar medida</option>
-                            <option v-for="medida in medidas" :key="medida.id_medida" :value="medida.id_medida">
-                                {{ medida.descripcion }}
-                            </option>
-                        </select>
+                        <SearchableSelect
+                            v-model="formData.id_medida"
+                            :options="medidas"
+                            label-key="descripcion"
+                            value-key="id_medida"
+                            placeholder="Buscar o crear medida..."
+                            creatable
+                            @create="handleCreateMedida"
+                        />
                     </div>
 
                     <div class="form-group">

@@ -489,6 +489,28 @@ export const useMaestrosStore = defineStore('maestros', {
             }
         },
 
+        async createMedida(descripcion: string) {
+            this.catalogosLoading = true;
+            this.error = null;
+            try {
+                const medida = await medidasService.create({ descripcion });
+                // Add to local list and sort
+                this.medidas.push(medida);
+                this.medidas.sort((a, b) => a.descripcion.localeCompare(b.descripcion));
+
+                const toast = useToast();
+                toast.success('Medida creada exitosamente');
+                return medida;
+            } catch (error: any) {
+                const toast = useToast();
+                this.error = error.response?.data?.message || 'Error al crear medida';
+                toast.error(this.error || 'Error desconocido');
+                throw error;
+            } finally {
+                this.catalogosLoading = false;
+            }
+        },
+
         // ============================================
         // UTILIDADES
         // ============================================
