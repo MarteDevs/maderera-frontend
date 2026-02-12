@@ -211,6 +211,34 @@ const focusProductSelect = (index: number) => {
     }
 };
 
+const fixDateYear = (field: 'fecha_emision' | 'fecha_prometida') => {
+    // Explicitly cast to string since we know it's a date string if present
+    const val = formData.value[field] as string;
+    if (!val) return;
+    
+    const parts = val.split('-');
+    if (parts.length === 3 && parts[0]) {
+        let year = parseInt(parts[0]);
+        // Handle 2 digit years (e.g. 26 -> 2026)
+        if (year < 100) {
+            year += 2000;
+        } 
+        // Handle years that have extra digits (e.g. 262026 -> 2026)
+        // This often happens if user types 2026 on top of 26
+        else if (year > 9999) {
+            const yearStr = year.toString();
+            // Take the last 4 digits as a heuristic
+            // If user typed 2026 after 26, it might be 262026
+            year = parseInt(yearStr.slice(-4));
+        }
+
+        // Reconstruct date
+        parts[0] = year.toString();
+        // Use type assertion to assign back
+        (formData.value as any)[field] = parts.join('-');
+    }
+};
+
 const save = async () => {
     saving.value = true;
     try {
@@ -328,7 +356,8 @@ onMounted(() => {
                             type="date" 
                             v-model="formData.fecha_emision" 
                             class="form-control"
-                            @keydown.enter.prevent="focusNext(observacionRef)" 
+                            @keydown.enter.prevent="focusNext(observacionRef)"
+                            @blur="fixDateYear('fecha_emision')"
                         />
                     </div>
 
