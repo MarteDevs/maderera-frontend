@@ -177,22 +177,17 @@ const setDetailRef = (el: any, rowIndex: number, field: string) => {
 };
 
 const focusNext = (nextRef: any) => {
-    if (nextRef && nextRef.value) {
-        if (typeof nextRef.value.focus === 'function') {
-            nextRef.value.focus();
-        } else if (nextRef.value.$el && typeof nextRef.value.$el.querySelector === 'function') {
-            // For components like SearchableSelect
-             const input = nextRef.value.$el.querySelector('input');
-             if (input) input.focus();
-        }
-    } else if (nextRef) {
-          // Direct element ref or component proxy
-         if (typeof nextRef.focus === 'function') {
-            nextRef.focus();
-        } else if (nextRef.$el) {
-             const input = nextRef.$el.querySelector('input');
-             if (input) input.focus();
-        }
+    if (!nextRef) return;
+    
+    // Check if it's a DOM element or component with exposed focus method
+    if (typeof nextRef.focus === 'function') {
+        nextRef.focus();
+    } else if (nextRef.$el) {
+        // Fallback for components that don't expose focus but have $el
+         const input = nextRef.$el.querySelector('input, select, textarea');
+         if (input && typeof input.focus === 'function') {
+             input.focus();
+         }
     }
 };
 
