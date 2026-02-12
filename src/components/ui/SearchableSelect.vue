@@ -95,8 +95,14 @@ const updateDropdownPosition = () => {
     }
 };
 
-const toggleDropdown = async () => {
+const toggleDropdown = async (event?: Event) => {
     if (props.disabled) return;
+    
+    // Prevent closing if we clicked the input itself (since focus handles opening)
+    if (event && event.target === inputRef.value) {
+        return;
+    }
+
     if (!isOpen.value) {
         isOpen.value = true;
         updateDropdownPosition();
@@ -232,7 +238,7 @@ defineExpose({ focus });
 
 <template>
     <div class="searchable-select" ref="containerRef" :class="{ 'disabled': disabled, 'dense': dense }">
-        <div class="input-wrapper" @click="toggleDropdown">
+        <div class="input-wrapper" @click="toggleDropdown($event)">
             <input 
                 ref="inputRef"
                 type="text" 
