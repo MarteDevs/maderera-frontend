@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { ChevronDown, Check, X } from 'lucide-vue-next';
 
 interface Option {
@@ -42,8 +42,10 @@ const emit = defineEmits(['update:modelValue', 'change']);
 const isOpen = ref(false);
 const searchQuery = ref('');
 const containerRef = ref<HTMLElement | null>(null);
+const dropdownRef = ref<HTMLElement | null>(null);
 const highlightedIndex = ref(-1);
 const inputRef = ref<HTMLInputElement | null>(null);
+const dropdownStyle = ref({ top: '0px', left: '0px', width: '0px' });
 
 // Initialize search query with selected option label if exists
 watch(() => props.modelValue, (newVal) => {
@@ -62,8 +64,6 @@ watch(() => props.modelValue, (newVal) => {
 const filteredOptions = computed(() => {
     if (!searchQuery.value) return props.options;
     
-    // Only filter if the query doesn't match the currently selected item EXACTLY
-    // This prevents the list from disappearing when you select something
     const selected = props.options.find(opt => opt[props.valueKey] === props.modelValue);
     if (selected && selected[props.labelKey] === searchQuery.value) {
         return props.options;
@@ -75,15 +75,27 @@ const filteredOptions = computed(() => {
     );
 });
 
-// Reset highlighted index when options change
 watch(filteredOptions, () => {
     highlightedIndex.value = -1;
 });
 
-const toggleDropdown = () => {
+const updateDropdownPosition = () => {
+    if (isOpen.value && containerRef.value) {
+        const rect = containerRef.value.getBoundingClientRect();
+        dropdownStyle.value = {
+            top: `${rect.bottom + window.scrollY + 4}px`,
+            left: `${rect.left + window.scrollX}px`,
+            width: `${rect.width}px`
+        };
+    }
+};
+
+const toggleDropdown = async () => {
     if (props.disabled) return;
     if (!isOpen.value) {
         isOpen.value = true;
+        updateDropdownPosition();
+        await nextTick();
         inputRef.value?.focus();
     } else {
         isOpen.value = false;
@@ -108,7 +120,8 @@ const clearSelection = (e: Event) => {
 };
 
 const scrollSelectedIntoView = (index: number) => {
-    const el = containerRef.value?.querySelector(`.dropdown-item:nth-child(${index + 1})`);
+    if (!dropdownRef.value) return;
+    const el = dropdownRef.value.querySelector(`.dropdown-item:nth-child(${index + 1})`);
     if (el) {
         el.scrollIntoView({ block: 'nearest' });
     }
@@ -121,7 +134,7 @@ const onKeydown = (e: KeyboardEvent) => {
         case 'ArrowDown':
             e.preventDefault();
             if (!isOpen.value) {
-                isOpen.value = true;
+                toggleDropdown();
                 highlightedIndex.value = 0;
             } else {
                 if (highlightedIndex.value < filteredOptions.value.length - 1) {
@@ -153,7 +166,6 @@ const onKeydown = (e: KeyboardEvent) => {
             inputRef.value?.blur();
             break;
         case 'Tab':
-            // Allow tab to move to next field, but close dropdown
             isOpen.value = false;
             break;
     }
@@ -161,31 +173,44 @@ const onKeydown = (e: KeyboardEvent) => {
 
 // Handle Click Outside
 const handleClickOutside = (event: MouseEvent) => {
-    if (containerRef.value && !containerRef.value.contains(event.target as Node)) {
+    // Check if click is inside container OR inside the teleported dropdown
+    const isClickInsideContainer = containerRef.value && containerRef.value.contains(event.target as Node);
+    const isClickInsideDropdown = dropdownRef.value && dropdownRef.value.contains(event.target as Node);
+
+    if (!isClickInsideContainer && !isClickInsideDropdown) {
         isOpen.value = false;
-        
-        // Reset query to selected value if no new selection was made
         const selected = props.options.find(opt => opt[props.valueKey] === props.modelValue);
         if (selected) {
             searchQuery.value = selected[props.labelKey];
         } else {
-            searchQuery.value = ''; // Clear if nothing selected
+            searchQuery.value = '';
         }
     }
 };
 
+// Handle Scroll/Resize to update position
+const handleScrollResize = () => {
+    if (isOpen.value) {
+        updateDropdownPosition();
+    }
+};
+
 onMounted(() => {
-    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScrollResize, true);
+    window.addEventListener('resize', handleScrollResize);
 });
 
 onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside);
+    document.removeEventListener('mousedown', handleClickOutside);
+    window.removeEventListener('scroll', handleScrollResize, true);
+    window.removeEventListener('resize', handleScrollResize);
 });
 
-// Focus handler
 const onFocus = () => {
     if (!props.disabled) {
         isOpen.value = true;
+        updateDropdownPosition();
     }
 };
 
@@ -217,26 +242,33 @@ const onFocus = () => {
             </div>
         </div>
 
-        <div v-show="isOpen" class="dropdown-menu">
-            <template v-if="filteredOptions.length > 0">
-                <div 
-                    v-for="(option, index) in filteredOptions" 
-                    :key="option[valueKey]"
-                    class="dropdown-item"
-                    :class="{ 
-                        'selected': option[valueKey] === modelValue,
-                        'highlighted': index === highlightedIndex
-                    }"
-                    @click="selectOption(option)"
-                >
-                    <span>{{ option[labelKey] }}</span>
-                    <Check v-if="option[valueKey] === modelValue" class="icon-check" />
+        <Teleport to="body">
+            <div 
+                v-if="isOpen" 
+                ref="dropdownRef"
+                class="dropdown-menu-teleported"
+                :style="dropdownStyle"
+            >
+                <template v-if="filteredOptions.length > 0">
+                    <div 
+                        v-for="(option, index) in filteredOptions" 
+                        :key="option[valueKey]"
+                        class="dropdown-item"
+                        :class="{ 
+                            'selected': option[valueKey] === modelValue,
+                            'highlighted': index === highlightedIndex
+                        }"
+                        @click="selectOption(option)"
+                    >
+                        <span>{{ option[labelKey] }}</span>
+                        <Check v-if="option[valueKey] === modelValue" class="icon-check" />
+                    </div>
+                </template>
+                <div v-else class="no-results">
+                    No se encontraron resultados
                 </div>
-            </template>
-            <div v-else class="no-results">
-                No se encontraron resultados
             </div>
-        </div>
+        </Teleport>
     </div>
 </template>
 
@@ -271,7 +303,7 @@ const onFocus = () => {
     border: none;
     background: transparent;
     padding: 0.75rem 1rem;
-    padding-right: 3.5rem; /* Space for controls */
+    padding-right: 3.5rem;
     font-size: 0.95rem;
     color: #111827;
     outline: none;
@@ -280,13 +312,8 @@ const onFocus = () => {
 
 /* Dense Mode Polish */
 .dense .search-input {
-    padding: 0.4rem 0.75rem; /* Reduced from 0.5rem */
-    padding-right: 3rem;
-    font-size: 0.85rem;
-}
-
-.dense .dropdown-item {
     padding: 0.4rem 0.75rem;
+    padding-right: 3rem;
     font-size: 0.85rem;
 }
 
@@ -316,69 +343,15 @@ const onFocus = () => {
 }
 
 .icon-chevron {
-    width: 14px; /* Slightly smaller icon */
+    width: 14px;
     height: 14px;
     color: #9ca3af;
     transition: transform 0.2s;
     pointer-events: none;
 }
 
-
 .icon-chevron.rotated {
     transform: rotate(180deg);
-}
-
-/* Dropdown */
-.dropdown-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin-top: 0.25rem;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    max-height: 250px;
-    overflow-y: auto;
-    z-index: 50;
-    padding: 0.25rem;
-}
-
-.dropdown-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    color: #374151;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background 0.1s;
-}
-
-.dropdown-item:hover,
-.dropdown-item.highlighted {
-    background: #f3f4f6;
-}
-
-.dropdown-item.selected {
-    background: #fef2f2;
-    color: #8B1E1E;
-    font-weight: 500;
-}
-
-.icon-check {
-    width: 16px;
-    height: 16px;
-    color: #8B1E1E;
-}
-
-.no-results {
-    padding: 0.75rem;
-    text-align: center;
-    color: #6b7280;
-    font-size: 0.875rem;
 }
 
 .icon-xs {
@@ -395,5 +368,57 @@ const onFocus = () => {
 .searchable-select.disabled .search-input {
     color: #9ca3af;
     cursor: not-allowed;
+}
+</style>
+
+<style>
+/* Global styles for teleported dropdown */
+.dropdown-menu-teleported {
+    position: absolute; /* Relative to body/window due to teleport */
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 9999; /* High z-index to sit on top of everything */
+    padding: 0.25rem;
+    box-sizing: border-box;
+}
+
+.dropdown-menu-teleported .dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    color: #374151;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.1s;
+}
+
+.dropdown-menu-teleported .dropdown-item:hover,
+.dropdown-menu-teleported .dropdown-item.highlighted {
+    background: #f3f4f6;
+}
+
+.dropdown-menu-teleported .dropdown-item.selected {
+    background: #fef2f2;
+    color: #8B1E1E;
+    font-weight: 500;
+}
+
+.dropdown-menu-teleported .no-results {
+    padding: 0.75rem;
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.dropdown-menu-teleported .icon-check {
+    width: 16px;
+    height: 16px;
+    color: #8B1E1E;
 }
 </style>

@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { ArrowLeft, Save, Plus, Trash } from 'lucide-vue-next';
+import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 import { 
     minasService, 
     proveedoresService, 
@@ -125,6 +126,7 @@ const cargarMaestros = async () => {
         proveedores.value = Array.isArray(p) ? p : (p as any).data || [];
         supervisores.value = Array.isArray(s) ? s : (s as any).data || [];
         productos.value = Array.isArray(prod) ? prod : (prod as any).data || [];
+        console.log('Productos cargados:', productos.value);
 
     } catch (e) {
         console.error('Error cargando maestros:', e);
@@ -144,6 +146,16 @@ const addDetalle = () => {
 const removeDetalle = (index: number) => {
     formData.value.detalles.splice(index, 1);
 };
+
+
+// ... existing code ...
+
+const formattedProductOptions = computed(() => {
+    return productos.value.map((prod: any) => ({
+        ...prod,
+        full_label: `${prod.nombre} ${prod.medidas?.descripcion ? '- ' + prod.medidas.descripcion : ''}`
+    }));
+});
 
 const save = async () => {
     saving.value = true;
@@ -273,16 +285,15 @@ onMounted(() => {
                         <tbody>
                             <tr v-for="(detalle, index) in formData.detalles" :key="index">
                                 <td>
-                                    <select 
-                                        v-model="detalle.id_producto" 
-                                        class="form-control dense"
+                                    <SearchableSelect 
+                                        v-model="detalle.id_producto"
+                                        :options="formattedProductOptions"
+                                        label-key="full_label"
+                                        value-key="id_producto"
+                                        placeholder="Producto..."
+                                        dense
                                         @change="handleProductChange(detalle)"
-                                    >
-                                        <option value="">Producto...</option>
-                                        <option v-for="p in productos" :key="p.id_producto" :value="p.id_producto">
-                                            {{ p.nombre }} {{ p.medidas?.descripcion ? ` - ${p.medidas.descripcion}` : '' }}
-                                        </option>
-                                    </select>
+                                    />
                                 </td>
                                 <td>
                                     <input type="number" v-model="detalle.cantidad_solicitada" class="form-control dense text-right" min="1" />
