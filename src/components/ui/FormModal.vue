@@ -7,6 +7,7 @@ interface Props {
     title: string;
     loading?: boolean;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    persistent?: boolean;
 }
 
 interface Emits {
@@ -17,6 +18,7 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
     loading: false,
     size: 'md',
+    persistent: false,
 });
 
 const emit = defineEmits<Emits>();
@@ -37,6 +39,7 @@ const closeModal = () => {
 };
 
 const handleBackdropClick = (e: MouseEvent) => {
+    if (props.persistent) return;
     if ((e.target as HTMLElement).classList.contains('modal-backdrop')) {
         closeModal();
     }

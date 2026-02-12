@@ -238,6 +238,7 @@ const handlePageChange = (page: number) => {
             :title="modalTitle"
             :loading="maestrosStore.productosLoading"
             size="md"
+            persistent
         >
             <form @submit.prevent="handleSubmit" class="product-form">
                 <div class="form-group">
