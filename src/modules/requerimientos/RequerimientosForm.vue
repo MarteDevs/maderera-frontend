@@ -162,7 +162,6 @@ const proveedorRef = ref<any>(null);
 const minaRef = ref<any>(null);
 const supervisorRef = ref<any>(null);
 const fechaEmisionRef = ref<HTMLInputElement | null>(null);
-const fechaPrometidaRef = ref<HTMLInputElement | null>(null);
 const observacionRef = ref<HTMLTextAreaElement | null>(null);
 
 // Refs for dynamic rows (Map: rowIndex -> { fieldName: element })
@@ -203,6 +202,16 @@ const handleProdSelectFocus = (index: number) => {
     if (rowRefs && rowRefs['cantidad']) {
         nextTick(() => {
             rowRefs['cantidad'].focus();
+        });
+    }
+};
+
+const focusProductSelect = (index: number) => {
+    const rowRefs = detailRefs.value.get(index);
+    if (rowRefs && rowRefs['producto']) {
+        nextTick(() => {
+            // SearchableSelect exposes focus()
+            rowRefs['producto'].focus();
         });
     }
 };
@@ -324,7 +333,7 @@ onMounted(() => {
                             type="date" 
                             v-model="formData.fecha_emision" 
                             class="form-control"
-                            @keydown.enter.prevent="focusNext(fechaPrometidaRef)" 
+                            @keydown.enter.prevent="focusNext(observacionRef)" 
                         />
                     </div>
 
@@ -336,7 +345,7 @@ onMounted(() => {
                             v-model="formData.fecha_prometida" 
                             class="form-control"
                             readonly 
-                            @keydown.enter.prevent="focusNext(observacionRef)"
+                            tabindex="-1"
                         />
                     </div>
                 </div>
@@ -348,6 +357,7 @@ onMounted(() => {
                         v-model="formData.observaciones" 
                         class="form-control" 
                         rows="2"
+                        @keydown.enter.prevent="focusProductSelect(0)"
                     ></textarea>
                 </div>
             </div>
@@ -377,6 +387,7 @@ onMounted(() => {
                             <tr v-for="(detalle, index) in formData.detalles" :key="index">
                                 <td>
                                     <SearchableSelect 
+                                        :ref="(el) => setDetailRef(el, index, 'producto')"
                                         v-model="detalle.id_producto"
                                         :options="formattedProductOptions"
                                         label-key="full_label"

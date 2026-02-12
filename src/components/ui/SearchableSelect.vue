@@ -314,8 +314,9 @@ defineExpose({ focus });
 }
 
 .searchable-select:not(.disabled) .input-wrapper:focus-within {
-    border-color: #8B1E1E;
-    box-shadow: 0 0 0 3px rgba(139, 30, 30, 0.1);
+    border-color: #8B1E1E; /* var(--primary) */
+    border-width: 2px;
+    box-shadow: 0 0 0 4px rgba(139, 30, 30, 0.2);
 }
 
 .search-input {
