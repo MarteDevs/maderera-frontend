@@ -22,6 +22,7 @@ const columns: Column[] = [
     { key: 'codigo', label: 'Código', sortable: true },
     { key: 'fecha_emision', label: 'Emisión', sortable: true },
     { key: 'fecha_prometida', label: 'Entrega', sortable: true },
+    { key: 'dias', label: 'Días', align: 'center' },
     { key: 'proveedores', label: 'Proveedor' },
     { key: 'minas', label: 'Mina' },
     { key: 'estado', label: 'Estado', sortable: true },
@@ -60,6 +61,19 @@ onMounted(() => {
     maestrosStore.fetchProveedores();
     maestrosStore.fetchMinas();
 });
+const getDaysElapsed = (fechaEmision: string | Date) => {
+    const start = new Date(fechaEmision);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays;
+};
+
+const isOverdue = (req: any) => {
+    if (req.estado === 'COMPLETADO' || req.estado === 'ANULADO') return false;
+    const days = getDaysElapsed(req.fecha_emision);
+    return days > 8;
+};
 </script>
 
 <template>
@@ -294,6 +308,15 @@ onMounted(() => {
 
                 <template #cell-fecha_prometida="{ value }">
                     {{ value ? new Date(value).toLocaleDateString() : '-' }}
+                </template>
+
+                <template #cell-dias="{ row }">
+                    <div 
+                        class="days-badge"
+                        :class="{ 'overdue': isOverdue(row) }"
+                    >
+                        {{ getDaysElapsed(row.fecha_emision) }} / 8
+                    </div>
                 </template>
 
                 <template #cell-proveedores="{ value }">
@@ -543,6 +566,24 @@ onMounted(() => {
 .status-parcial {
     background-color: #dbeafe;
     color: #2563eb;
+}
+
+.days-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background-color: #f3f4f6;
+    color: #4b5563;
+}
+
+.days-badge.overdue {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
 }
 
 .btn-primary {

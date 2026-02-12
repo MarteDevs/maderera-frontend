@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { ArrowLeft, Save, Plus, Trash } from 'lucide-vue-next';
@@ -21,6 +21,7 @@ const pageTitle = computed(() => isEditing.value ? 'Editar Requerimiento' : 'Nue
 
 // Estado del formulario
 const formData = ref({
+    fecha_emision: new Date().toISOString().split('T')[0],
     fecha_prometida: '',
     id_proveedor: '',
     id_mina: '',
@@ -38,6 +39,15 @@ const preciosMap = ref<Record<number, number>>({}); // Mapa id_producto -> preci
 
 // Estado UI
 const saving = ref(false);
+
+// Regla de negocio: Fecha Prometida = Fecha Emisión + 8 días
+watch(() => formData.value.fecha_emision, (newDate) => {
+    if (newDate) {
+        const date = new Date(`${newDate}T00:00:00`); // Forzar zona horaria local/neutra para evitar desfases
+        date.setDate(date.getDate() + 8);
+        formData.value.fecha_prometida = date.toISOString().split('T')[0] ?? '';
+    }
+}, { immediate: true });
 
 const handleProveedorChange = async () => {
     // Cuando cambia el proveedor, recargamos los precios
@@ -124,7 +134,7 @@ const cargarMaestros = async () => {
 const addDetalle = () => {
     formData.value.detalles.push({
         id_producto: '',
-        cantidad_solicitada: 1,
+        cantidad_solicitada: '',
         precio_proveedor: 0,
         precio_mina: 0,
         observacion: ''
@@ -220,6 +230,11 @@ onMounted(() => {
                             <option value="">Seleccione...</option>
                             <option v-for="m in supervisores" :key="m.id_supervisor" :value="m.id_supervisor">{{ m.nombre }}</option>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fecha de Emisión</label>
+                        <input type="date" v-model="formData.fecha_emision" class="form-control" />
                     </div>
 
                     <div class="form-group">
