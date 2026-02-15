@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2 } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2, Download } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -140,6 +140,82 @@ const clearAllFilters = () => {
         fecha_fin: undefined,
         search: ''
     });
+};
+
+// Export Logic
+import * as XLSX from 'xlsx';
+
+const handleExport = async () => {
+    try {
+        const fullData = await store.fetchAllForExport();
+        
+        // Flatten data for Excel
+        const rows: any[] = [];
+
+        fullData.forEach((req: any) => {
+            // Calculate totals for this requirement
+            const totals = calculateTotals(req);
+
+            // If no details, push one row with req info only
+            if (!req.requerimiento_detalles || req.requerimiento_detalles.length === 0) {
+                rows.push({
+                    'Código': req.codigo,
+                    'Estado': req.estado,
+                    'Fecha Emisión': new Date(req.fecha_emision).toLocaleDateString(),
+                    'Fecha Entrega': req.fecha_prometida ? new Date(req.fecha_prometida).toLocaleDateString() : '-',
+                    'Proveedor': req.proveedores?.nombre,
+                    'Mina': req.minas?.nombre,
+                    'Supervisor': req.supervisores?.nombre,
+                    'Total Cantidad': 0,
+                    'Total Precio Prov.': 0,
+                    'Total Precio Mina': 0,
+                    'Producto': '-',
+                    'Medida': '-',
+                    'Cantidad': 0,
+                    'Precio Prov.': 0,
+                    'Precio Mina': 0,
+                    'Subtotal Prov.': 0,
+                    'Subtotal Mina': 0
+                });
+                return;
+            }
+
+            // Create a row for each product detail
+            req.requerimiento_detalles.forEach((det: any) => {
+                rows.push({
+                    'Código': req.codigo,
+                    'Estado': req.estado,
+                    'Fecha Emisión': new Date(req.fecha_emision).toLocaleDateString(),
+                    'Fecha Entrega': req.fecha_prometida ? new Date(req.fecha_prometida).toLocaleDateString() : '-',
+                    'Proveedor': req.proveedores?.nombre,
+                    'Mina': req.minas?.nombre,
+                    'Supervisor': req.supervisores?.nombre,
+                    'Total Cantidad': totals.quantity,
+                    'Total Precio Prov.': totals.provider,
+                    'Total Precio Mina': totals.mine,
+                    // Product Details
+                    'Producto': det.productos?.nombre || '-',
+                    'Medida': det.productos?.medidas?.descripcion || '-',
+                    'Cantidad': det.cantidad_solicitada,
+                    'Precio Prov.': parseFloat(det.precio_proveedor),
+                    'Precio Mina': parseFloat(det.precio_mina),
+                    'Subtotal Prov.': parseFloat(det.precio_proveedor) * det.cantidad_solicitada,
+                    'Subtotal Mina': parseFloat(det.precio_mina) * det.cantidad_solicitada
+                });
+            });
+        });
+
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Requerimientos");
+
+        // Save file
+        XLSX.writeFile(wb, `Requerimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    } catch (error) {
+        console.error('Export error:', error);
+    }
 };
 </script>
 
@@ -375,6 +451,10 @@ const clearAllFilters = () => {
 
             <!-- Botón de acción principal -->
             <template #toolbar-actions>
+                <button class="btn btn-outline-success mr-2" @click="handleExport" :disabled="loading">
+                    <Download class="icon" />
+                    Exportar Excel
+                </button>
                 <button class="btn btn-primary" @click="router.push('/requirements/new')">
                     <Plus class="icon" />
                     Nuevo Requerimiento
@@ -1294,5 +1374,27 @@ const clearAllFilters = () => {
         font-size: 0.7rem;
         padding: 0.35rem 0.85rem;
     }
+}
+
+.btn-outline-success {
+    background-color: transparent;
+    border: 1px solid #10B981;
+    color: #10B981;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-outline-success:hover {
+    background-color: #10B981;
+    color: white;
+}
+
+.btn-outline-success:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: #A7F3D0;
+    color: #A7F3D0;
 }
 </style>

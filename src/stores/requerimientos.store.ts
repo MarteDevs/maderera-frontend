@@ -112,6 +112,23 @@ export const useRequerimientosStore = defineStore('requerimientos', {
             }
         },
 
+        async fetchAllForExport() {
+            try {
+                this.loading = true;
+                const response = await requerimientosService.getAll({
+                    ...this.filters,
+                    page: 1,
+                    limit: 10000,
+                });
+                return response.data;
+            } catch (error: any) {
+                console.error('Error fetching export data:', error);
+                throw error;
+            } finally {
+                this.loading = false;
+            }
+        },
+
         // ============================================
         // DETALLE
         // ============================================
