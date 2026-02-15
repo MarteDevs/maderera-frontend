@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-vue-next';
 import LoadingSpinner from './LoadingSpinner.vue';
 import EmptyState from './EmptyState.vue';
@@ -25,6 +25,9 @@ interface Props {
     totalPages?: number;
     pageSize?: number;
     total?: number;
+    // Expansion
+    expandable?: boolean;
+    rowKey?: string;
 }
 
 interface Emits {
@@ -43,7 +46,24 @@ const props = withDefaults(defineProps<Props>(), {
     totalPages: 1,
     pageSize: 20,
     total: 0,
+    expandable: false,
 });
+
+const expandedRows = ref<Set<any>>(new Set());
+
+const isExpanded = (row: T) => {
+    const key = props.rowKey ? row[props.rowKey] : row;
+    return expandedRows.value.has(key);
+};
+
+const toggleExpand = (row: T) => {
+    const key = props.rowKey ? row[props.rowKey] : row;
+    if (expandedRows.value.has(key)) {
+        expandedRows.value.delete(key);
+    } else {
+        expandedRows.value.add(key);
+    }
+};
 
 const emit = defineEmits<Emits>();
 
@@ -104,6 +124,7 @@ const paginationInfo = computed(() => {
             <table class="table">
                 <thead>
                     <tr>
+                        <th v-if="expandable" class="expand-header"></th>
                         <th
                             v-for="column in columns"
                             :key="column.key"
@@ -115,25 +136,43 @@ const paginationInfo = computed(() => {
                     </tr>
                 </thead>
                 <tbody v-if="!loading && hasData">
-                    <tr
-                        v-for="(row, index) in data"
-                        :key="index"
-                        class="table-row"
-                        @click="handleRowClick(row)"
-                    >
-                        <td
-                            v-for="column in columns"
-                            :key="column.key"
-                            :style="{ textAlign: column.align || 'left' }"
+                    <template v-for="(row, index) in data" :key="rowKey ? row[rowKey] : index">
+                        <tr
+                            class="table-row"
+                            :class="{ 'expanded-row': isExpanded(row) }"
+                            @click="handleRowClick(row)"
                         >
-                            <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]">
-                                {{ row[column.key] }}
-                            </slot>
-                        </td>
-                        <td v-if="$slots.actions" class="actions-cell">
-                            <slot name="actions" :row="row"></slot>
-                        </td>
-                    </tr>
+                            <!-- Expand Toggle Column -->
+                            <td v-if="expandable" class="expand-cell" @click.stop="toggleExpand(row)">
+                                <ChevronRight 
+                                    class="expand-icon" 
+                                    :class="{ 'rotated': isExpanded(row) }"
+                                    :size="20"
+                                />
+                            </td>
+
+                            <td
+                                v-for="column in columns"
+                                :key="column.key"
+                                :style="{ textAlign: column.align || 'left' }"
+                            >
+                                <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]">
+                                    {{ row[column.key] }}
+                                </slot>
+                            </td>
+                            <td v-if="$slots.actions" class="actions-cell">
+                                <slot name="actions" :row="row"></slot>
+                            </td>
+                        </tr>
+                        <!-- Expanded Details Row -->
+                        <tr v-if="expandable && isExpanded(row)" class="details-row">
+                            <td :colspan="(columns.length + (expandable ? 1 : 0) + ($slots.actions ? 1 : 0))">
+                                <div class="details-content">
+                                    <slot name="row-details" :row="row"></slot>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
                 </tbody>
             </table>
 
@@ -367,5 +406,36 @@ const paginationInfo = computed(() => {
 .icon {
     width: 1.25rem;
     height: 1.25rem;
+}
+
+/* Expandable Rows */
+.expand-cell, .expand-header {
+    width: 40px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.expand-icon {
+    transition: transform 0.2s;
+    color: var(--text-light);
+}
+
+.expand-icon.rotated {
+    transform: rotate(90deg);
+}
+
+.expanded-row {
+    background-color: var(--bg-light);
+}
+
+.details-row td {
+    padding: 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.details-content {
+    padding: 1.5rem;
+    background-color: var(--bg-light);
+    border-top: 1px solid var(--border-light);
 }
 </style>

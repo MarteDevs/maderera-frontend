@@ -17,6 +17,18 @@ const { requerimientos, loading, pagination, filters } = storeToRefs(store);
 const { proveedores, minas } = storeToRefs(maestrosStore);
 const router = useRouter();
 
+// Methods
+const calculateTotals = (req: any) => {
+    if (!req.requerimiento_detalles) return { quantity: 0, provider: 0, mine: 0 };
+    
+    return req.requerimiento_detalles.reduce((acc: any, det: any) => {
+        acc.quantity += det.cantidad_solicitada || 0;
+        acc.provider += (det.precio_proveedor || 0) * (det.cantidad_solicitada || 0);
+        acc.mine += (det.precio_mina || 0) * (det.cantidad_solicitada || 0);
+        return acc;
+    }, { quantity: 0, provider: 0, mine: 0 });
+};
+
 // Columnas de la tabla
 const columns: Column[] = [
     { key: 'codigo', label: 'Código', sortable: true },
@@ -25,11 +37,13 @@ const columns: Column[] = [
     { key: 'dias', label: 'Días', align: 'center' },
     { key: 'proveedores', label: 'Proveedor' },
     { key: 'minas', label: 'Mina' },
+    { key: 'total_cantidad', label: 'Cant. Items', align: 'center' },
+    { key: 'total_precio_proveedor', label: 'Total Prov.', align: 'right' },
+    { key: 'total_precio_mina', label: 'Total Mina', align: 'right' },
     { key: 'estado', label: 'Estado', sortable: true },
     { key: 'actions', label: 'Acciones', align: 'center' }
 ];
 
-// Methods
 const openDetails = (req: any) => {
     selectedReq.value = req;
     showModal.value = true;
@@ -293,6 +307,8 @@ const clearAllFilters = () => {
             :total-pages="pagination.totalPages"
             :total="pagination.total"
             :page-size="pagination.limit"
+            expandable
+            row-key="id_requerimiento"
             @search="handleSearch"
             @page-change="handlePageChange"
         >
@@ -394,6 +410,18 @@ const clearAllFilters = () => {
                     </div>
                 </template>
 
+                <template #cell-total_cantidad="{ row }">
+                    <span class="bold">{{ calculateTotals(row).quantity }}</span>
+                </template>
+
+                <template #cell-total_precio_proveedor="{ row }">
+                    <span>S/. {{ calculateTotals(row).provider.toFixed(2) }}</span>
+                </template>
+
+                <template #cell-total_precio_mina="{ row }">
+                    <span>S/. {{ calculateTotals(row).mine.toFixed(2) }}</span>
+                </template>
+
                 <template #cell-proveedores="{ value }">
                     <span class="font-medium">{{ value?.nombre || '---' }}</span>
                 </template>
@@ -414,6 +442,49 @@ const clearAllFilters = () => {
                     <button class="btn-icon" title="Ver Detalle" @click="openDetails(row)">
                         Ver
                     </button>
+                </template>
+
+                <!-- Row Details Expansion -->
+                <template #row-details="{ row }">
+                    <div class="details-container">
+                        <h4 class="details-title">Detalle de Productos</h4>
+                        <div class="table-mini-wrapper">
+                            <table class="table-mini">
+                                <thead>
+                                    <tr>
+                                        <th>Producto</th>
+                                        <th class="text-right">Cant. Solicitada</th>
+                                        <th class="text-right">Precio Prov.</th>
+                                        <th class="text-right">Precio Mina</th>
+                                        <th class="text-right">Subtotal Prov.</th>
+                                        <th class="text-right">Subtotal Mina</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="item in row.requerimiento_detalles" :key="item.id_detalle">
+                                        <td>
+                                            <div class="flex-center">
+                                                <FileText class="icon-xs text-gray" />
+                                                {{ item.productos?.nombre }}
+                                                <span class="text-xs text-gray" v-if="item.productos?.medidas">
+                                                    ({{ item.productos.medidas.descripcion }})
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="text-right bold">{{ item.cantidad_solicitada }}</td>
+                                        <td class="text-right">S/. {{ item.precio_proveedor }}</td>
+                                        <td class="text-right">S/. {{ item.precio_mina }}</td>
+                                        <td class="text-right">S/. {{ (item.precio_proveedor * item.cantidad_solicitada).toFixed(2) }}</td>
+                                        <td class="text-right">S/. {{ (item.precio_mina * item.cantidad_solicitada).toFixed(2) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="notes" v-if="row.observaciones">
+                            <label>Observaciones:</label>
+                            <p>{{ row.observaciones }}</p>
+                        </div>
+                    </div>
                 </template>
             </DataTable>
             
