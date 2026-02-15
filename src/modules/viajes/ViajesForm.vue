@@ -29,7 +29,31 @@ const placaInput = ref<HTMLInputElement | null>(null);
 const conductorInput = ref<HTMLInputElement | null>(null);
 const fechaInput = ref<HTMLInputElement | null>(null);
 const obsInput = ref<HTMLTextAreaElement | null>(null);
-const recibidoInputs = ref<HTMLInputElement[]>([]);
+
+// Desktop Refs
+const recibidoInputsDesktop = ref<HTMLInputElement[]>([]);
+const estadoInputsDesktop = ref<HTMLSelectElement[]>([]);
+const obsItemInputsDesktop = ref<HTMLInputElement[]>([]);
+
+// Mobile Refs
+const recibidoInputsMobile = ref<HTMLInputElement[]>([]);
+const estadoInputsMobile = ref<HTMLSelectElement[]>([]);
+const obsItemInputsMobile = ref<HTMLInputElement[]>([]);
+
+const saveBtn = ref<HTMLButtonElement | null>(null);
+
+// Helper to focus visible element
+const focusVisible = (index: number, desktopArr: HTMLElement[], mobileArr: HTMLElement[]) => {
+    const desktopEl = desktopArr[index];
+    if (desktopEl && desktopEl.offsetParent !== null) {
+        desktopEl.focus();
+        return;
+    }
+    const mobileEl = mobileArr[index];
+    if (mobileEl && mobileEl.offsetParent !== null) {
+        mobileEl.focus();
+    }
+};
 
 // Methods
 const handleEnter = (index: number, section: string) => {
@@ -44,16 +68,25 @@ const handleEnter = (index: number, section: string) => {
             obsInput.value?.focus();
             break;
         case 'obs':
-            if (recibidoInputs.value && recibidoInputs.value.length > 0) {
-                recibidoInputs.value[0]?.focus();
+            if (recibidoInputsDesktop.value.length > 0 || recibidoInputsMobile.value.length > 0) {
+                focusVisible(0, recibidoInputsDesktop.value, recibidoInputsMobile.value);
             }
             break;
         case 'recibido':
-            if (recibidoInputs.value && index < recibidoInputs.value.length - 1) {
-                recibidoInputs.value[index + 1]?.focus();
+            focusVisible(index, estadoInputsDesktop.value, estadoInputsMobile.value);
+            break;
+        case 'estado':
+            focusVisible(index, obsItemInputsDesktop.value, obsItemInputsMobile.value);
+            break;
+        case 'obsItem':
+            const nextIndex = index + 1;
+            const hasNextDesktop = nextIndex < recibidoInputsDesktop.value.length;
+            const hasNextMobile = nextIndex < recibidoInputsMobile.value.length;
+
+            if (hasNextDesktop || hasNextMobile) {
+                focusVisible(nextIndex, recibidoInputsDesktop.value, recibidoInputsMobile.value);
             } else {
-                // Opcional: enfocar el botón de guardar o volver al principio
-                // saveBtn.value?.focus();
+                saveBtn.value?.focus();
             }
             break;
     }
@@ -171,7 +204,7 @@ const showSuccessModal = ref(false);
                 </div>
                 <div class="actions">
                     <button class="btn-secondary" @click="router.back()">Cancelar</button>
-                    <button class="btn-primary" @click="save" :disabled="saving">
+                    <button ref="saveBtn" class="btn-primary" @click="save" :disabled="saving">
                         <Save class="icon" />
                         {{ saving ? 'Guardando...' : 'Guardar Recepción' }}
                     </button>
@@ -239,7 +272,7 @@ const showSuccessModal = ref(false);
                                 <td class="text-center font-bold">{{ detalle.cantidad_pendiente }}</td>
                                 <td>
                                     <input 
-                                        :ref="(el) => { if (el) recibidoInputs[index] = el as HTMLInputElement }"
+                                        :ref="(el) => { if (el) recibidoInputsDesktop[index] = el as HTMLInputElement }"
                                         v-model.number="detalle.cantidad_recibida" 
                                         type="number" 
                                         min="0" 
@@ -250,7 +283,13 @@ const showSuccessModal = ref(false);
                                     />
                                 </td>
                                 <td>
-                                    <select v-model="detalle.estado_entrega" class="form-control dense" :disabled="detalle.cantidad_pendiente <= 0">
+                                    <select 
+                                        :ref="(el) => { if (el) estadoInputsDesktop[index] = el as HTMLSelectElement }"
+                                        v-model="detalle.estado_entrega" 
+                                        class="form-control dense" 
+                                        :disabled="detalle.cantidad_pendiente <= 0"
+                                        @keydown.enter.prevent="handleEnter(index, 'estado')"
+                                    >
                                         <option value="OK">Conforme (OK)</option>
                                         <option value="PARCIAL">Parcial</option>
                                         <option value="MUESTRA">Muestra</option>
@@ -259,7 +298,15 @@ const showSuccessModal = ref(false);
                                     </select>
                                 </td>
                                 <td>
-                                    <input v-model="detalle.observacion" type="text" class="form-control dense" placeholder="..." :disabled="detalle.cantidad_pendiente <= 0" />
+                                    <input 
+                                        :ref="(el) => { if (el) obsItemInputsDesktop[index] = el as HTMLInputElement }"
+                                        v-model="detalle.observacion" 
+                                        type="text" 
+                                        class="form-control dense" 
+                                        placeholder="..." 
+                                        :disabled="detalle.cantidad_pendiente <= 0" 
+                                        @keydown.enter.prevent="handleEnter(index, 'obsItem')"
+                                    />
                                 </td>
                             </tr>
                         </tbody>
@@ -306,7 +353,7 @@ const showSuccessModal = ref(false);
                                     :class="{ 'input-active': detalle.cantidad_recibida > 0 }"
                                     :disabled="detalle.cantidad_pendiente <= 0"
                                     placeholder="0"
-                                    :ref="(el) => { if (el) recibidoInputs[index] = el as HTMLInputElement }"
+                                    :ref="(el) => { if (el) recibidoInputsMobile[index] = el as HTMLInputElement }"
                                     @keydown.enter.prevent="handleEnter(index, 'recibido')"
                                 />
                             </div>
@@ -317,7 +364,10 @@ const showSuccessModal = ref(false);
                                 <select 
                                     v-model="detalle.estado_entrega" 
                                     class="form-control-mobile" 
-                                    :disabled="detalle.cantidad_pendiente <= 0">
+                                    :disabled="detalle.cantidad_pendiente <= 0"
+                                    :ref="(el) => { if (el) estadoInputsMobile[index] = el as HTMLSelectElement }"
+                                    @keydown.enter.prevent="handleEnter(index, 'estado')"
+                                >
                                     <option value="OK">✓ Conforme (OK)</option>
                                     <option value="PARCIAL">⚠ Parcial</option>
                                     <option value="MUESTRA">📦 Muestra</option>
@@ -335,6 +385,8 @@ const showSuccessModal = ref(false);
                                     class="form-control-mobile" 
                                     placeholder="Notas adicionales..." 
                                     :disabled="detalle.cantidad_pendiente <= 0" 
+                                    :ref="(el) => { if (el) obsItemInputsMobile[index] = el as HTMLInputElement }"
+                                    @keydown.enter.prevent="handleEnter(index, 'obsItem')"
                                 />
                             </div>
                         </div>
