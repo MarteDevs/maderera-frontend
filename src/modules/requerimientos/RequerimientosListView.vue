@@ -561,9 +561,7 @@ const clearAllFilters = () => {
 }
 
 /* Filters in toolbar */
-.filter-item {
-    margin-right: 1.5rem;
-}
+/* .filter-item align handled by flex gap */
 
 .filter-select {
     padding: 0.625rem 0.875rem;
@@ -609,10 +607,15 @@ const clearAllFilters = () => {
     box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
 }
 
-.date-range {
+.date-filter-group {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+}
+
+.date-select {
+    min-width: 110px; /* Smaller width for month/year */
+    max-width: 140px;
 }
 
 /* Status Badges */
