@@ -143,79 +143,164 @@ const clearAllFilters = () => {
 };
 
 // Export Logic
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 const handleExport = async () => {
     try {
         const fullData = await store.fetchAllForExport();
         
-        // Flatten data for Excel
-        const rows: any[] = [];
+        // Create Workbook and Worksheet
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Requerimientos');
 
+        // Define Columns
+        worksheet.columns = [
+            { header: 'CÓDIGO', key: 'codigo', width: 15 },
+            { header: 'ESTADO', key: 'estado', width: 15 },
+            { header: 'EMISIÓN', key: 'emision', width: 12 },
+            { header: 'ENTREGA', key: 'entrega', width: 12 },
+            { header: 'PROVEEDOR', key: 'proveedor', width: 25 },
+            { header: 'MINA', key: 'mina', width: 20 },
+            { header: 'SUPERVISOR', key: 'supervisor', width: 20 },
+            { header: 'TOTAL CANT.', key: 'total_cantidad', width: 12 },
+            { header: 'TOTAL PROV.', key: 'total_prov', width: 15 },
+            { header: 'TOTAL MINA', key: 'total_mina', width: 15 },
+            { header: 'PRODUCTO', key: 'producto', width: 25 },
+            { header: 'MEDIDA', key: 'medida', width: 15 },
+            { header: 'CANTIDAD', key: 'cantidad', width: 10 },
+            { header: 'PRECIO PROV.', key: 'precio_prov', width: 15 },
+            { header: 'PRECIO MINA', key: 'precio_mina', width: 15 },
+            { header: 'SUBTOTAL PROV.', key: 'subtotal_prov', width: 15 },
+            { header: 'SUBTOTAL MINA', key: 'subtotal_mina', width: 15 },
+        ];
+
+        // Add Header Styling
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4B5563' } // Gray-600
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Process Data
         fullData.forEach((req: any) => {
-            // Calculate totals for this requirement
             const totals = calculateTotals(req);
+            
+            // Common data for all rows of this requirement
+            const commonData = {
+                codigo: req.codigo,
+                estado: req.estado,
+                emision: new Date(req.fecha_emision).toLocaleDateString(),
+                entrega: req.fecha_prometida ? new Date(req.fecha_prometida).toLocaleDateString() : '-',
+                proveedor: req.proveedores?.nombre,
+                mina: req.minas?.nombre,
+                supervisor: req.supervisores?.nombre,
+                total_cantidad: totals.quantity,
+                total_prov: totals.provider,
+                total_mina: totals.mine,
+            };
 
-            // If no details, push one row with req info only
+            // If no details, add single row
             if (!req.requerimiento_detalles || req.requerimiento_detalles.length === 0) {
-                rows.push({
-                    'Código': req.codigo,
-                    'Estado': req.estado,
-                    'Fecha Emisión': new Date(req.fecha_emision).toLocaleDateString(),
-                    'Fecha Entrega': req.fecha_prometida ? new Date(req.fecha_prometida).toLocaleDateString() : '-',
-                    'Proveedor': req.proveedores?.nombre,
-                    'Mina': req.minas?.nombre,
-                    'Supervisor': req.supervisores?.nombre,
-                    'Total Cantidad': 0,
-                    'Total Precio Prov.': 0,
-                    'Total Precio Mina': 0,
-                    'Producto': '-',
-                    'Medida': '-',
-                    'Cantidad': 0,
-                    'Precio Prov.': 0,
-                    'Precio Mina': 0,
-                    'Subtotal Prov.': 0,
-                    'Subtotal Mina': 0
+                const row = worksheet.addRow({
+                    ...commonData,
+                    producto: '-', medida: '-', cantidad: 0, 
+                    precio_prov: 0, precio_mina: 0, 
+                    subtotal_prov: 0, subtotal_mina: 0
                 });
+                styleRow(row, req.estado);
                 return;
             }
 
-            // Create a row for each product detail
+            // Add row for each detail
             req.requerimiento_detalles.forEach((det: any) => {
-                rows.push({
-                    'Código': req.codigo,
-                    'Estado': req.estado,
-                    'Fecha Emisión': new Date(req.fecha_emision).toLocaleDateString(),
-                    'Fecha Entrega': req.fecha_prometida ? new Date(req.fecha_prometida).toLocaleDateString() : '-',
-                    'Proveedor': req.proveedores?.nombre,
-                    'Mina': req.minas?.nombre,
-                    'Supervisor': req.supervisores?.nombre,
-                    'Total Cantidad': totals.quantity,
-                    'Total Precio Prov.': totals.provider,
-                    'Total Precio Mina': totals.mine,
-                    // Product Details
-                    'Producto': det.productos?.nombre || '-',
-                    'Medida': det.productos?.medidas?.descripcion || '-',
-                    'Cantidad': det.cantidad_solicitada,
-                    'Precio Prov.': parseFloat(det.precio_proveedor),
-                    'Precio Mina': parseFloat(det.precio_mina),
-                    'Subtotal Prov.': parseFloat(det.precio_proveedor) * det.cantidad_solicitada,
-                    'Subtotal Mina': parseFloat(det.precio_mina) * det.cantidad_solicitada
+                const row = worksheet.addRow({
+                    ...commonData,
+                    producto: det.productos?.nombre || '-',
+                    medida: det.productos?.medidas?.descripcion || '-',
+                    cantidad: det.cantidad_solicitada,
+                    precio_prov: parseFloat(det.precio_proveedor),
+                    precio_mina: parseFloat(det.precio_mina),
+                    subtotal_prov: parseFloat(det.precio_proveedor) * det.cantidad_solicitada,
+                    subtotal_mina: parseFloat(det.precio_mina) * det.cantidad_solicitada,
                 });
+                styleRow(row, req.estado);
             });
         });
 
-        // Create worksheet
-        const ws = XLSX.utils.json_to_sheet(rows);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Requerimientos");
+        // Apply Borders to all cells
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
 
-        // Save file
-        XLSX.writeFile(wb, `Requerimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
+        // Generate Buffer and Save
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Requerimientos_${new Date().toISOString().split('T')[0]}.xlsx`);
 
     } catch (error) {
         console.error('Export error:', error);
     }
+};
+
+// Helper function to style rows based on status
+const styleRow = (row: ExcelJS.Row, estado: string) => {
+    // Currency Format for Price Columns
+    const currencyCols = [9, 10, 14, 15, 16, 17]; // 1-based indices
+    currencyCols.forEach(colIdx => {
+        const cell = row.getCell(colIdx);
+        cell.numFmt = '"S/."#,##0.00';
+        cell.alignment = { horizontal: 'right' };
+    });
+
+    // Center Align Date & Status Columns
+    [1, 2, 3, 4, 12, 13].forEach(colIdx => {
+        row.getCell(colIdx).alignment = { horizontal: 'center' };
+    });
+
+    // Status Column Styling
+    const statusCell = row.getCell(2);
+    let argbColor = 'FF000000'; // Default Black
+    let bgColor = 'FFFFFFFF';   // Default White
+
+    switch (estado) {
+        case 'PENDIENTE':
+            bgColor = 'FFFFEDD5'; // Orange-100
+            argbColor = 'FFA6580E'; // Orange-800
+            break;
+        case 'COMPLETADO':
+            bgColor = 'FFDCFCE7'; // Green-100
+            argbColor = 'FF166534'; // Green-800
+            break;
+        case 'ANULADO':
+            bgColor = 'FFFEE2E2'; // Red-100
+            argbColor = 'FF991B1B'; // Red-800
+            break;
+        case 'PARCIAL':
+            bgColor = 'FFDBEAFE'; // Blue-100
+            argbColor = 'FF1E40AF'; // Blue-800
+            break;
+    }
+
+    statusCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: bgColor }
+    };
+    statusCell.font = {
+        color: { argb: argbColor },
+        bold: true
+    };
 };
 </script>
 
