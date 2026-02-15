@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { requerimientosService, type Requerimiento } from '../requerimientos/requerimientos.service';
@@ -23,6 +23,41 @@ const formData = ref({
 });
 
 const idRequerimiento = Number(route.params.id_requerimiento);
+
+// Refs for inputs
+const placaInput = ref<HTMLInputElement | null>(null);
+const conductorInput = ref<HTMLInputElement | null>(null);
+const fechaInput = ref<HTMLInputElement | null>(null);
+const obsInput = ref<HTMLTextAreaElement | null>(null);
+const recibidoInputs = ref<HTMLInputElement[]>([]);
+
+// Methods
+const handleEnter = (index: number, section: string) => {
+    switch (section) {
+        case 'placa':
+            conductorInput.value?.focus();
+            break;
+        case 'conductor':
+            fechaInput.value?.focus();
+            break;
+        case 'fecha':
+            obsInput.value?.focus();
+            break;
+        case 'obs':
+            if (recibidoInputs.value && recibidoInputs.value.length > 0) {
+                recibidoInputs.value[0]?.focus();
+            }
+            break;
+        case 'recibido':
+            if (recibidoInputs.value && index < recibidoInputs.value.length - 1) {
+                recibidoInputs.value[index + 1]?.focus();
+            } else {
+                // Opcional: enfocar el botón de guardar o volver al principio
+                // saveBtn.value?.focus();
+            }
+            break;
+    }
+};
 
 // Computed
 
@@ -52,6 +87,9 @@ const loadRequerimiento = async () => {
         router.back();
     } finally {
         loadingReq.value = false;
+        nextTick(() => {
+            placaInput.value?.focus();
+        });
     }
 };
 
@@ -152,20 +190,20 @@ const showSuccessModal = ref(false);
                 <div class="grid-cols-3">
                     <div class="form-group">
                         <label>Placa Vehículo</label>
-                        <input v-model="formData.placa_vehiculo" type="text" class="form-control" placeholder="ABC-123" />
+                        <input ref="placaInput" v-model="formData.placa_vehiculo" type="text" class="form-control" placeholder="ABC-123" @keydown.enter.prevent="handleEnter(0, 'placa')" />
                     </div>
                     <div class="form-group">
                         <label>Conductor</label>
-                        <input v-model="formData.conductor" type="text" class="form-control" placeholder="Nombre completo" />
+                        <input ref="conductorInput" v-model="formData.conductor" type="text" class="form-control" placeholder="Nombre completo" @keydown.enter.prevent="handleEnter(0, 'conductor')" />
                     </div>
                     <div class="form-group">
                         <label>Fecha Llegada</label>
-                        <input v-model="formData.fecha_ingreso" type="datetime-local" class="form-control" />
+                        <input ref="fechaInput" v-model="formData.fecha_ingreso" type="datetime-local" class="form-control" @keydown.enter.prevent="handleEnter(0, 'fecha')" />
                     </div>
                 </div>
                 <div class="form-group full-width">
                     <label>Observaciones del Viaje</label>
-                    <textarea v-model="formData.observaciones" class="form-control" rows="2"></textarea>
+                    <textarea ref="obsInput" v-model="formData.observaciones" class="form-control" rows="2" @keydown.enter.prevent="handleEnter(0, 'obs')"></textarea>
                 </div>
             </div>
 
@@ -187,7 +225,7 @@ const showSuccessModal = ref(false);
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="detalle in formData.detalles" :key="detalle.id_detalle_requerimiento" :class="{ 'row-completed': detalle.cantidad_pendiente <= 0 }">
+                            <tr v-for="(detalle, index) in formData.detalles" :key="detalle.id_detalle_requerimiento" :class="{ 'row-completed': detalle.cantidad_pendiente <= 0 }">
                                 <td>
                                     <div class="product-info">
                                         <Truck class="icon-sm text-gray" />
@@ -201,12 +239,14 @@ const showSuccessModal = ref(false);
                                 <td class="text-center font-bold">{{ detalle.cantidad_pendiente }}</td>
                                 <td>
                                     <input 
+                                        :ref="(el) => { if (el) recibidoInputs[index] = el as HTMLInputElement }"
                                         v-model.number="detalle.cantidad_recibida" 
                                         type="number" 
                                         min="0" 
                                         class="form-control text-center"
                                         :class="{ 'bg-blue-50': detalle.cantidad_recibida > 0, 'bg-green-50': detalle.cantidad_pendiente <= 0 }"
                                         :disabled="detalle.cantidad_pendiente <= 0"
+                                        @keydown.enter.prevent="handleEnter(index, 'recibido')"
                                     />
                                 </td>
                                 <td>
@@ -229,7 +269,7 @@ const showSuccessModal = ref(false);
                 <!-- Mobile: Product Cards -->
                 <div class="product-cards mobile-only">
                     <div 
-                        v-for="detalle in formData.detalles" 
+                        v-for="(detalle, index) in formData.detalles" 
                         :key="detalle.id_detalle_requerimiento"
                         class="product-card"
                         :class="{ 'card-completed': detalle.cantidad_pendiente <= 0 }">
@@ -266,6 +306,8 @@ const showSuccessModal = ref(false);
                                     :class="{ 'input-active': detalle.cantidad_recibida > 0 }"
                                     :disabled="detalle.cantidad_pendiente <= 0"
                                     placeholder="0"
+                                    :ref="(el) => { if (el) recibidoInputs[index] = el as HTMLInputElement }"
+                                    @keydown.enter.prevent="handleEnter(index, 'recibido')"
                                 />
                             </div>
 
@@ -606,6 +648,22 @@ const showSuccessModal = ref(false);
     font-size: 0.75rem;
     letter-spacing: 0.05em;
     border-bottom: none;
+}
+
+/* Focus properties */
+.form-control:focus,
+.form-control-mobile:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); /* Soft blue glow */
+    background-color: #f8fafc;
+}
+
+/* Highlight focused element */
+.form-control:focus,
+.form-control-mobile:focus {
+    border-color: #2563eb;
+    background-color: #eff6ff;
 }
 
 /* ============================================
