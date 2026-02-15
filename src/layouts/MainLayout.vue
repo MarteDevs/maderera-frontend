@@ -42,9 +42,10 @@ provide('mobileMenu', mobileMenu);
 .page-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 0.5rem;
     background-color: var(--background);
     width: 100%;
+    zoom: 0.9;
 }
 
 /* ============================================

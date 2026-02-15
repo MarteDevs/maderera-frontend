@@ -410,7 +410,8 @@ const paginationInfo = computed(() => {
 
 /* Expandable Rows */
 .expand-cell, .expand-header {
-    width: 40px;
+    width: 24px;
+    padding: 0 4px;
     text-align: center;
     cursor: pointer;
 }

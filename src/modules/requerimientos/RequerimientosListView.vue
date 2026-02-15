@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2, Download } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2, Download, Eye } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -38,10 +38,8 @@ const columns: Column[] = [
     { key: 'proveedores', label: 'Proveedor' },
     { key: 'minas', label: 'Mina' },
     { key: 'total_cantidad', label: 'Cant. Items', align: 'center' },
-    { key: 'total_precio_proveedor', label: 'Total Prov.', align: 'right' },
-    { key: 'total_precio_mina', label: 'Total Mina', align: 'right' },
     { key: 'estado', label: 'Estado', sortable: true },
-    { key: 'actions', label: 'Acciones', align: 'center' }
+    { key: 'actions', label: 'Acciones', align: 'center', width: '100px' }
 ];
 
 const openDetails = (req: any) => {
@@ -596,17 +594,19 @@ const styleRow = (row: ExcelJS.Row, estado: string) => {
                 </template>
 
                 <template #cell-actions="{ row }">
-                    <button 
-                        class="btn-icon" 
-                        title="Registrar Ingreso (Viaje)" 
-                        @click="router.push(`/viajes/new/${row.id_requerimiento}`)"
-                        v-if="row.estado !== 'ANULADO' && row.estado !== 'COMPLETADO'"
-                    >
-                        <Truck class="icon-sm" />
-                    </button>
-                    <button class="btn-icon" title="Ver Detalle" @click="openDetails(row)">
-                        Ver
-                    </button>
+                    <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button 
+                            class="btn-icon" 
+                            title="Registrar Ingreso (Viaje)" 
+                            @click="router.push(`/viajes/new/${row.id_requerimiento}`)"
+                            v-if="row.estado !== 'ANULADO' && row.estado !== 'COMPLETADO'"
+                        >
+                            <Truck class="icon-sm" />
+                        </button>
+                        <button class="btn-icon" title="Ver Detalle" @click="openDetails(row)">
+                            <Eye class="icon-sm" />
+                        </button>
+                    </div>
                 </template>
 
                 <!-- Row Details Expansion -->
@@ -1481,5 +1481,11 @@ const styleRow = (row: ExcelJS.Row, estado: string) => {
     cursor: not-allowed;
     border-color: #A7F3D0;
     color: #A7F3D0;
+}
+
+.requerimientos-view {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0;
 }
 </style>
