@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2 } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -73,6 +73,59 @@ const isOverdue = (req: any) => {
     if (req.estado === 'COMPLETADO' || req.estado === 'ANULADO') return false;
     const days = getDaysElapsed(req.fecha_emision);
     return days > 8;
+};
+
+// Date Filters Logic
+const months = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 6 }, (_, i) => currentYear - 5 + i).reverse();
+
+const selectedMonth = ref<number | null>(null);
+const selectedYear = ref<number | null>(currentYear);
+
+const handleDateFilterChange = () => {
+    // If month is selected but year is null, default to current year
+    if (selectedMonth.value !== null && selectedYear.value === null) {
+        selectedYear.value = currentYear;
+    }
+
+    if (selectedMonth.value !== null && selectedYear.value !== null) {
+        // Calculate start and end date of the month
+        const startDate = new Date(selectedYear.value, selectedMonth.value, 1);
+        const endDate = new Date(selectedYear.value, selectedMonth.value + 1, 0);
+
+        // Update filters
+        store.setFilters({
+            fecha_inicio: startDate.toISOString().split('T')[0],
+            fecha_fin: endDate.toISOString().split('T')[0]
+        });
+    }
+};
+
+const clearDateFilter = () => {
+    selectedMonth.value = null;
+    selectedYear.value = currentYear; // Reset to current year for better UX
+    store.setFilters({
+        fecha_inicio: undefined,
+        fecha_fin: undefined
+    });
+};
+
+const clearAllFilters = () => {
+    selectedMonth.value = null;
+    selectedYear.value = currentYear;
+    store.setFilters({
+        id_proveedor: undefined,
+        id_mina: undefined,
+        estado: undefined,
+        fecha_inicio: undefined,
+        fecha_fin: undefined,
+        search: ''
+    });
 };
 </script>
 
@@ -274,11 +327,33 @@ const isOverdue = (req: any) => {
                 </div>
 
                 <div class="filter-item">
-                    <div class="date-range">
-                        <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" />
-                        <span>-</span>
-                        <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" />
+                    <div class="date-filter-group">
+                        <select v-model="selectedMonth" @change="handleDateFilterChange" class="filter-select date-select">
+                            <option :value="null">Mes</option>
+                            <option v-for="(month, index) in months" :key="index" :value="index">
+                                {{ month }}
+                            </option>
+                        </select>
+                        <select v-model="selectedYear" @change="handleDateFilterChange" class="filter-select date-select">
+                            <option :value="null">Año</option>
+                            <option v-for="year in years" :key="year" :value="year">
+                                {{ year }}
+                            </option>
+                        </select>
+                        <button v-if="selectedMonth !== null || selectedYear !== null" 
+                                @click="clearDateFilter" 
+                                class="btn-clear-date"
+                                title="Limpiar fecha">
+                            <X :size="14" />
+                        </button>
                     </div>
+                </div>
+
+                <div class="filter-item">
+                    <button @click="clearAllFilters" class="btn-secondary btn-sm" title="Limpiar todos los filtros">
+                        <Trash2 :size="16" />
+                        Limpiar
+                    </button>
                 </div>
             </template>
 
@@ -602,6 +677,48 @@ const isOverdue = (req: any) => {
 
 .btn-primary:hover {
     background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: white;
+    color: var(--text);
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background-color: var(--bg-light);
+    border-color: var(--text-light);
+}
+
+.btn-sm {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.btn-clear-date {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light);
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 4px;
+}
+
+.btn-clear-date:hover {
+    background-color: var(--bg-light);
+    color: #dc2626;
 }
 
 .icon {
