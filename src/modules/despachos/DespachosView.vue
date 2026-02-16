@@ -123,8 +123,8 @@ const loadingInventario = ref(false);
 const filters = ref({
     estado: undefined as 'PREPARANDO' | 'EN_TRANSITO' | 'ENTREGADO' | 'ANULADO' | undefined,
     id_mina: undefined as number | undefined,
-    fecha_desde: '',
-    fecha_hasta: '',
+    mes: '', // Default all months
+    anio: new Date().getFullYear(),
     search: ''
 });
 
@@ -134,8 +134,6 @@ const activeFiltersCount = computed(() => {
     let count = 0;
     if (filters.value.estado) count++;
     if (filters.value.id_mina) count++;
-    if (filters.value.fecha_desde) count++;
-    if (filters.value.fecha_hasta) count++;
     return count;
 });
 
@@ -144,7 +142,7 @@ const showConfirmModal = ref(false);
 const showTransitoModal = ref(false);
 const showEntregarModal = ref(false);
 const showAnularModal = ref(false);
-const showDetailModal = ref(false); // Nuevo modal de detalle
+const showDetailModal = ref(false);
 const selectedDespacho = ref<any>(null);
 const motivoAnulacion = ref('');
 
@@ -169,7 +167,6 @@ const loadInventario = async () => {
             id_producto: item.id_producto,
             id_medida: item.id_medida || 0,
             precio_venta: parseFloat(item.precio_venta_base) || 0,
-            // Misma lógica que en el Form: Si no hay sugerido, 70% del venta
             precio_compra: item.precio_compra_sugerido ? parseFloat(item.precio_compra_sugerido) : (parseFloat(item.precio_venta_base) || 0) * 0.7
         }));
     } catch (error) {
@@ -210,8 +207,8 @@ const clearFilters = () => {
     filters.value = {
         estado: undefined,
         id_mina: undefined,
-        fecha_desde: '',
-        fecha_hasta: '',
+        mes: '',
+        anio: new Date().getFullYear(),
         search: ''
     };
     applyFilters();
@@ -404,13 +401,32 @@ onMounted(() => {
                     </div>
 
                     <div class="form-group">
-                        <label>Fecha Desde</label>
-                        <input type="date" v-model="filters.fecha_desde" class="form-control" />
+                        <label>Mes</label>
+                        <select v-model="filters.mes" class="form-control">
+                            <option value="">Todos los Meses</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
-                        <label>Fecha Hasta</label>
-                        <input type="date" v-model="filters.fecha_hasta" class="form-control" />
+                        <label>Año</label>
+                        <select v-model.number="filters.anio" class="form-control">
+                            <option :value="2024">2024</option>
+                            <option :value="2025">2025</option>
+                            <option :value="2026">2026</option>
+                            <option :value="2027">2027</option>
+                        </select>
                     </div>
                 </div>
 
@@ -509,15 +525,38 @@ onMounted(() => {
                         </select>
                     </div>
 
+                    <!-- Month Filter -->
                     <div class="filter-item">
-                        <input type="date" v-model="filters.fecha_desde" @change="applyFilters" class="filter-input" placeholder="Desde" />
+                        <select v-model="filters.mes" @change="applyFilters" class="filter-select">
+                            <option value="">Todos los Meses</option>
+                            <option value="1">Enero</option>
+                            <option value="2">Febrero</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Abril</option>
+                            <option value="5">Mayo</option>
+                            <option value="6">Junio</option>
+                            <option value="7">Julio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Septiembre</option>
+                            <option value="10">Octubre</option>
+                            <option value="11">Noviembre</option>
+                            <option value="12">Diciembre</option>
+                        </select>
                     </div>
 
+                    <!-- Year Filter -->
                     <div class="filter-item">
-                        <input type="date" v-model="filters.fecha_hasta" @change="applyFilters" class="filter-input" placeholder="Hasta" />
+                        <select v-model.number="filters.anio" @change="applyFilters" class="filter-select">
+                            <option :value="2024">2024</option>
+                            <option :value="2025">2025</option>
+                            <option :value="2026">2026</option>
+                            <option :value="2027">2027</option>
+                        </select>
                     </div>
 
-                    <button @click="clearFilters" class="btn btn-secondary btn-sm">Limpiar</button>
+                    <button @click="clearFilters" class="btn btn-secondary btn-sm" title="Limpiar Filtros">
+                        <Trash2 class="icon-sm" />
+                    </button>
                 </template>
 
                 <template #cell-fecha_creacion="{ value }">
@@ -792,7 +831,7 @@ onMounted(() => {
 .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: center; /* Ensures vertical centering */
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);

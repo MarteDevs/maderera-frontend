@@ -30,10 +30,32 @@ export const useDespachosStore = defineStore('despachos', () => {
     });
 
     // Actions
-    async function fetchDespachos(filters?: DespachoFilters) {
+    async function fetchDespachos(filters?: DespachoFilters & { mes?: string, anio?: number }) {
         loading.value = true;
         try {
-            const response = await despachosService.getAll(filters);
+            const apiFilters: DespachoFilters = { ...filters };
+
+            // Logic for Month/Year
+            if (filters?.mes && filters?.anio) {
+                const year = filters.anio;
+                const month = parseInt(filters.mes) - 1; // JS months are 0-indexed
+
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0); // Last day of month
+
+                apiFilters.fecha_desde = startDate.toISOString().split('T')[0];
+                apiFilters.fecha_hasta = endDate.toISOString().split('T')[0];
+            } else if (filters?.anio && !filters.mes) {
+                // Full year if only year is selected
+                apiFilters.fecha_desde = `${filters.anio}-01-01`;
+                apiFilters.fecha_hasta = `${filters.anio}-12-31`;
+            }
+
+            // Remove non-API properties
+            delete (apiFilters as any).mes;
+            delete (apiFilters as any).anio;
+
+            const response = await despachosService.getAll(apiFilters);
             despachos.value = response.data;
             pagination.value = response.pagination;
         } catch (error: any) {

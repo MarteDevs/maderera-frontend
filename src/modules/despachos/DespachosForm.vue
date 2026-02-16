@@ -40,6 +40,7 @@ const formData = ref({
     id_mina: undefined as number | undefined,
     id_supervisor: undefined as number | undefined,
     id_viaje: undefined as number | undefined,
+    fecha_creacion: new Date().toISOString().split('T')[0], // Default today
     observaciones: '',
     detalles: [] as DetalleForm[]
 });
@@ -107,6 +108,7 @@ const loadDespacho = async () => {
             id_mina: despacho.id_mina,
             id_supervisor: despacho.id_supervisor,
             id_viaje: despacho.id_viaje,
+            fecha_creacion: despacho.fecha_creacion ? new Date(despacho.fecha_creacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             observaciones: despacho.observaciones || '',
             detalles: despacho.despacho_detalles.map((d: any) => {
                 const stockInfo = getStockInfo(d.id_producto);
@@ -242,6 +244,7 @@ const save = async () => {
             id_supervisor: formData.value.id_supervisor,
             id_viaje: formData.value.id_viaje,
             observaciones: formData.value.observaciones,
+            fecha_creacion: formData.value.fecha_creacion,
             detalles: formData.value.detalles.map(d => ({
                 id_producto: d.id_producto,
                 id_medida: d.id_medida,
@@ -345,6 +348,15 @@ onMounted(async () => {
                                     </select>
                                     <ChevronDown class="select-icon" />
                                 </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="required">Fecha de Emisión</label>
+                                <input 
+                                    type="date" 
+                                    v-model="formData.fecha_creacion" 
+                                    class="form-control-premium"
+                                />
                             </div>
 
                             <div class="form-group full-width">

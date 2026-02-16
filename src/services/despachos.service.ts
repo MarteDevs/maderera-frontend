@@ -12,6 +12,7 @@ export interface CreateDespachoDTO {
     id_supervisor?: number;
     id_viaje?: number;
     observaciones?: string;
+    fecha_creacion?: string; // Fecha manual
     detalles: DespachoDetalle[];
 }
 
