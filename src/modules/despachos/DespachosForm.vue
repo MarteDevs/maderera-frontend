@@ -322,7 +322,9 @@ onMounted(async () => {
                     </div>
 
                     <div class="card-body-premium">
-                        <div class="form-grid">
+                        <!-- Custom 3-column layout for minimalist design -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; align-items: start;">
+                            <!-- Col 1: Mina -->
                             <div class="form-group" :class="{ 'has-error': errors.id_mina }">
                                 <label class="required">Mina Destino</label>
                                 <div class="select-wrapper">
@@ -337,6 +339,7 @@ onMounted(async () => {
                                 <span v-if="errors.id_mina" class="error-message">{{ errors.id_mina }}</span>
                             </div>
 
+                            <!-- Col 2: Supervisor -->
                             <div class="form-group">
                                 <label>Supervisor Responsable</label>
                                 <div class="select-wrapper">
@@ -350,24 +353,31 @@ onMounted(async () => {
                                 </div>
                             </div>
 
+                             <!-- Col 3: Fecha -->
                             <div class="form-group">
                                 <label class="required">Fecha de Emisión</label>
-                                <input 
-                                    type="date" 
-                                    v-model="formData.fecha_creacion" 
-                                    class="form-control-premium"
-                                />
+                                <div class="relative">
+                                    <input 
+                                        type="date" 
+                                        v-model="formData.fecha_creacion" 
+                                        class="form-control-premium"
+                                    />
+                                </div>
+                                <small class="text-muted mt-1 block" style="font-size: 0.75rem;">
+                                    Código: DSP-{{ new Date(formData.fecha_creacion || new Date()).getFullYear() }}-XXXX
+                                </small>
                             </div>
+                        </div>
 
-                            <div class="form-group full-width">
-                                <label>Observaciones</label>
-                                <textarea 
-                                    v-model="formData.observaciones" 
-                                    class="form-control-premium textarea"
-                                    rows="3"
-                                    placeholder="Ingrese cualquier observación relevante para este despacho..."
-                                ></textarea>
-                            </div>
+                        <!-- Full width Observaciones -->
+                        <div class="form-group mt-4 full-width">
+                            <label>Observaciones</label>
+                            <textarea 
+                                v-model="formData.observaciones" 
+                                class="form-control-premium textarea"
+                                rows="2"
+                                placeholder="Ingrese cualquier observación relevante..."
+                            ></textarea>
                         </div>
                     </div>
                 </div>
