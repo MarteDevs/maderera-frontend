@@ -103,7 +103,7 @@ const handleExport = async () => {
         const fullData = await store.fetchAllForExport();
         
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Viajes');
+        const worksheet = workbook.addWorksheet('Viajes Detallado');
 
         // Define Columns
         worksheet.columns = [
@@ -112,9 +112,17 @@ const handleExport = async () => {
             { header: 'PROVEEDOR', key: 'proveedor', width: 20 },
             { header: 'MINA', key: 'mina', width: 20 },
             { header: 'PLACA', key: 'placa', width: 15 },
-            { header: 'CONDUCTOR', key: 'conductor', width: 25 },
-            { header: 'FECHA INGRESO', key: 'fecha_ingreso', width: 20 },
-            { header: 'USUARIO', key: 'usuario', width: 15 },
+            { header: 'CONDUCTOR', key: 'conductor', width: 20 },
+            { header: 'FECHA INGRESO', key: 'fecha_ingreso', width: 18 },
+            { header: 'USUARIO', key: 'usuario', width: 12 },
+            // Detailed Columns
+            { header: 'PRODUCTO', key: 'producto', width: 25 },
+            { header: 'MEDIDA', key: 'medida', width: 15 },
+            { header: 'CANT. RECIBIDA', key: 'cantidad', width: 15 },
+            { header: 'PRECIO COMPRA', key: 'precio_compra', width: 15 }, // Provider Price
+            { header: 'PRECIO VENTA', key: 'precio_venta', width: 15 },   // Mina Price
+            { header: 'SUBTOTAL COMPRA', key: 'subtotal_compra', width: 18 },
+            { header: 'SUBTOTAL VENTA', key: 'subtotal_venta', width: 18 },
         ];
 
         // Style Header
@@ -127,27 +135,59 @@ const handleExport = async () => {
         };
         headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // Add Data
+        // Process Data
         fullData.forEach((viaje: any) => {
-            const row = worksheet.addRow({
+            // Fix: Access correct nested properties based on API response structure
+            const req = viaje.requerimientos || viaje.requerimiento; // Fallback just in case
+            
+            const commonData = {
                 id_viaje: viaje.id_viaje,
-                requerimiento: viaje.requerimiento?.codigo || '-',
-                proveedor: viaje.requerimiento?.proveedor?.nombre || '-',
-                mina: viaje.requerimiento?.mina?.nombre || '-',
+                requerimiento: req?.codigo || '-',
+                proveedor: req?.proveedores?.nombre || req?.proveedor?.nombre || '-',
+                mina: req?.minas?.nombre || req?.mina?.nombre || '-',
                 placa: viaje.placa_vehiculo,
                 conductor: viaje.conductor,
                 fecha_ingreso: new Date(viaje.fecha_ingreso).toLocaleString(),
                 usuario: viaje.created_by
-            });
+            };
 
-            // Center align specific columns
-            [1, 2, 7].forEach(colIdx => {
-                row.getCell(colIdx).alignment = { horizontal: 'center' };
+            if (!viaje.viaje_detalles || viaje.viaje_detalles.length === 0) {
+                // Add single row if no details
+                worksheet.addRow({
+                    ...commonData,
+                    producto: '-', medida: '-', cantidad: 0,
+                    precio_compra: 0, precio_venta: 0,
+                    subtotal_compra: 0, subtotal_venta: 0
+                });
+                return;
+            }
+
+            // Add row for each detail
+            viaje.viaje_detalles.forEach((detalle: any) => {
+                const reqDetalle = detalle.requerimiento_detalles;
+                const producto = reqDetalle?.productos;
+                const medida = producto?.medidas?.descripcion || producto?.medida?.descripcion || '-';
+                
+                const cantidad = detalle.cantidad_recibida || 0;
+                const precioCompra = parseFloat(reqDetalle?.precio_proveedor || 0);
+                const precioVenta = parseFloat(reqDetalle?.precio_mina || 0);
+
+                worksheet.addRow({
+                    ...commonData,
+                    producto: producto?.nombre || '-',
+                    medida: medida,
+                    cantidad: cantidad,
+                    precio_compra: precioCompra,
+                    precio_venta: precioVenta,
+                    subtotal_compra: cantidad * precioCompra,
+                    subtotal_venta: cantidad * precioVenta
+                });
             });
         });
 
-        // Add Borders
-        worksheet.eachRow((row) => {
+        // Styling Rows
+        worksheet.eachRow((row, rowNumber) => {
+            // Apply Borders
             row.eachCell((cell) => {
                 cell.border = {
                     top: { style: 'thin' },
@@ -156,11 +196,52 @@ const handleExport = async () => {
                     right: { style: 'thin' }
                 };
             });
+
+            // Center Align specific columns
+            if (rowNumber > 1) { // Skip header
+                // Align Text Columns
+                [1, 2, 7, 8, 11].forEach(colIdx => {
+                    row.getCell(colIdx).alignment = { horizontal: 'center' };
+                });
+
+                // Currency Format and Right Align for Price Columns (12, 13, 14, 15)
+                [11, 12, 13, 14, 15].forEach(colIdx => {
+                    const cell = row.getCell(colIdx);
+                    if (colIdx >= 12) cell.numFmt = '"S/."#,##0.00'; // Prices
+                    cell.alignment = { horizontal: 'right' };
+                });
+
+                // Apply Colors to Distinguish Columns
+                // Cantidad (11) - Light Blue
+                row.getCell(11).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE3F2FD' }
+                };
+                
+                // Precio Compra (12) & Subtotal Compra (14) - Light Green (Purchase)
+                [12, 14].forEach(colIdx => {
+                    row.getCell(colIdx).fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFE8F5E9' }
+                    };
+                });
+
+                // Precio Venta (13) & Subtotal Venta (15) - Light Orange (Sale)
+                [13, 15].forEach(colIdx => {
+                    row.getCell(colIdx).fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFF3E0' }
+                    };
+                });
+            }
         });
 
         const buffer = await workbook.xlsx.writeBuffer();
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, `Viajes_${new Date().toISOString().split('T')[0]}.xlsx`);
+        saveAs(blob, `Viajes_Detallado_${new Date().toISOString().split('T')[0]}.xlsx`);
 
     } catch (error) {
         console.error('Export error:', error);
