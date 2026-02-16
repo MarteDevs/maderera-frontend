@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { Plus, Edit, Trash2 } from 'lucide-vue-next';
 import { useMaestrosStore } from '../../../stores';
 import { DataTable, FormModal, ConfirmDialog } from '../../../components/ui';
@@ -10,6 +10,30 @@ import type { Producto } from '../../../types/models';
 console.log('🚀 ProductosListView: Componente cargado');
 
 const maestrosStore = useMaestrosStore();
+
+// Form navigation refs
+const nombreInput = ref<HTMLInputElement | null>(null);
+const medidaSelect = ref<InstanceType<typeof SearchableSelect> | null>(null);
+const clasificacionSelect = ref<HTMLSelectElement | null>(null);
+const precioInput = ref<HTMLInputElement | null>(null);
+const observacionesTextarea = ref<HTMLTextAreaElement | null>(null);
+
+const handleEnterNav = (currentField: string) => {
+    switch (currentField) {
+        case 'nombre':
+            medidaSelect.value?.focus();
+            break;
+        case 'medida':
+            clasificacionSelect.value?.focus();
+            break;
+        case 'clasificacion':
+            precioInput.value?.focus();
+            break;
+        case 'precio':
+            observacionesTextarea.value?.focus();
+            break;
+    }
+};
 
 const handleCreateMedida = async (newMedidaLabel: string) => {
     try {
@@ -90,6 +114,9 @@ const openCreateModal = () => {
         proveedores: []
     };
     showFormModal.value = true;
+    nextTick(() => {
+        nombreInput.value?.focus();
+    });
 };
 
 const openEditModal = (producto: Producto) => {
@@ -244,11 +271,13 @@ const handlePageChange = (page: number) => {
                 <div class="form-group">
                     <label for="nombre">Nombre *</label>
                     <input
+                        ref="nombreInput"
                         id="nombre"
                         v-model="formData.nombre"
                         type="text"
                         required
                         placeholder="Ej: Poste de Eucalipto"
+                        @keydown.enter.prevent="handleEnterNav('nombre')"
                     />
                 </div>
 
@@ -256,6 +285,7 @@ const handlePageChange = (page: number) => {
                     <div class="form-group">
                         <label for="medida">Medida *</label>
                         <SearchableSelect
+                            ref="medidaSelect"
                             v-model="formData.id_medida"
                             :options="medidas"
                             label-key="descripcion"
@@ -263,12 +293,18 @@ const handlePageChange = (page: number) => {
                             placeholder="Buscar o crear medida..."
                             creatable
                             @create="handleCreateMedida"
+                            @enter="handleEnterNav('medida')"
                         />
                     </div>
 
                     <div class="form-group">
                         <label for="clasificacion">Clasificación</label>
-                        <select id="clasificacion" v-model.number="formData.id_clasificacion">
+                        <select 
+                            ref="clasificacionSelect"
+                            id="clasificacion" 
+                            v-model.number="formData.id_clasificacion"
+                            @keydown.enter.prevent="handleEnterNav('clasificacion')"
+                        >
                             <option :value="undefined">Sin clasificación</option>
                             <option
                                 v-for="clasificacion in clasificaciones"
@@ -284,6 +320,7 @@ const handlePageChange = (page: number) => {
                 <div class="form-group">
                     <label for="precio">Precio de Venta Base *</label>
                     <input
+                        ref="precioInput"
                         id="precio"
                         v-model.number="formData.precio_venta_base"
                         type="number"
@@ -291,12 +328,14 @@ const handlePageChange = (page: number) => {
                         min="0"
                         required
                         placeholder="0.00"
+                        @keydown.enter.prevent="handleEnterNav('precio')"
                     />
                 </div>
 
                 <div class="form-group">
                     <label for="observaciones">Observaciones</label>
                     <textarea
+                        ref="observacionesTextarea"
                         id="observaciones"
                         v-model="formData.observaciones"
                         rows="3"
@@ -397,7 +436,22 @@ const handlePageChange = (page: number) => {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-hover);
+    background-color: var(--primary-light);
+}
+
+.btn-primary:active:not(:disabled) {
+    background-color: var(--primary-light);
+    transform: scale(0.98);
+}
+
+.btn-primary:focus:not(:disabled) {
+    outline: none;
+    background-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.2);
+}
+
+.btn-primary:focus-visible:not(:disabled) {
+    background-color: var(--primary-light);
 }
 
 .btn-secondary {

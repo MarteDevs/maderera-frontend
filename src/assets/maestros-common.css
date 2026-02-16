@@ -19,7 +19,22 @@
 }
 
 .btn-primary:hover:not(:disabled) {
-    background-color: var(--primary-hover);
+    background-color: var(--primary-light);
+}
+
+.btn-primary:active:not(:disabled) {
+    background-color: var(--primary-light);
+    transform: scale(0.98);
+}
+
+.btn-primary:focus:not(:disabled) {
+    outline: none;
+    background-color: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.2);
+}
+
+.btn-primary:focus-visible:not(:disabled) {
+    background-color: var(--primary-light);
 }
 
 .btn-secondary {

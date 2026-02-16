@@ -24,8 +24,8 @@ const activeFiltersCount = computed(() => {
     let count = 0;
     if (filters.value.id_proveedor) count++;
     if (filters.value.id_mina) count++;
-    if (filters.value.fecha_inicio) count++;
-    if (filters.value.fecha_fin) count++;
+    if (filters.value.mes && filters.value.mes !== (new Date().getMonth() + 1)) count++;
+    if (filters.value.anio && filters.value.anio !== new Date().getFullYear()) count++;
     return count;
 });
 
@@ -57,6 +57,43 @@ const applyFilters = () => {
 
 const handleSearch = (value: string) => {
     store.setFilters({ search: value });
+};
+
+// Filter Options
+const months = [
+    { value: 1, label: 'Enero' },
+    { value: 2, label: 'Febrero' },
+    { value: 3, label: 'Marzo' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Mayo' },
+    { value: 6, label: 'Junio' },
+    { value: 7, label: 'Julio' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Septiembre' },
+    { value: 10, label: 'Octubre' },
+    { value: 11, label: 'Noviembre' },
+    { value: 12, label: 'Diciembre' }
+];
+
+const years = computed(() => {
+    const currentYear = new Date().getFullYear();
+    const range = [];
+    for (let i = currentYear; i >= currentYear - 5; i--) {
+        range.push(i);
+    }
+    return range;
+});
+
+const clearFilters = () => {
+    store.setFilters({
+        search: '',
+        id_proveedor: '',
+        id_mina: '',
+        mes: new Date().getMonth() + 1,
+        anio: new Date().getFullYear(),
+        fecha_inicio: '',
+        fecha_fin: ''
+    });
 };
 
 // Cargar datos
@@ -119,11 +156,15 @@ onMounted(() => {
                 </div>
 
                 <div class="mobile-filter-group">
-                    <label>Rango de Fechas</label>
-                    <div class="mobile-date-range">
-                        <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="mobile-filter-date" />
-                        <span>-</span>
-                        <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="mobile-filter-date" />
+                    <label>Periodo</label>
+                    <div class="mobile-date-row">
+                        <select v-model="filters.mes" @change="applyFilters" class="mobile-filter-select">
+                            <option value="">Todos los Meses</option>
+                            <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
+                        </select>
+                        <select v-model="filters.anio" @change="applyFilters" class="mobile-filter-select">
+                            <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -245,11 +286,18 @@ onMounted(() => {
                     </div>
 
                     <div class="filter-item">
-                        <div class="date-range">
-                            <input type="date" v-model="filters.fecha_inicio" @change="applyFilters" class="filter-date" />
-                            <span>-</span>
-                            <input type="date" v-model="filters.fecha_fin" @change="applyFilters" class="filter-date" />
+                        <div class="date-filters">
+                            <select v-model="filters.mes" @change="applyFilters" class="filter-select small">
+                                <option value="">Todos los Meses</option>
+                                <option v-for="m in months" :key="m.value" :value="m.value">{{ m.label }}</option>
+                            </select>
+                            <select v-model="filters.anio" @change="applyFilters" class="filter-select small">
+                                <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                            </select>
                         </div>
+                    </div>
+                     <div class="filter-item" v-if="activeFiltersCount > 0">
+                        <button class="btn-text" @click="clearFilters">Limpiar</button>
                     </div>
                 </template>
                     <template #cell-id_viaje="{ value }">
@@ -420,10 +468,26 @@ onMounted(() => {
     box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.1);
 }
 
-.date-range {
+.date-filters {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
+}
+
+.filter-select.small {
+    min-width: 100px;
+    max-width: 140px;
+}
+
+/* Mobile specific styles */
+.mobile-date-row {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.mobile-date-row .mobile-filter-select {
+    flex: 1;
 }
 
 .btn-icon {

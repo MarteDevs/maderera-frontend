@@ -21,7 +21,9 @@ export const useViajesStore = defineStore('viajes', () => {
         id_proveedor: '',
         id_mina: '',
         fecha_inicio: '',
-        fecha_fin: ''
+        fecha_fin: '',
+        mes: new Date().getMonth() + 1, // Default current month
+        anio: new Date().getFullYear()  // Default current year
     });
 
     async function fetchViajes() {
@@ -35,7 +37,9 @@ export const useViajesStore = defineStore('viajes', () => {
                 id_proveedor: filters.value.id_proveedor || undefined,
                 id_mina: filters.value.id_mina || undefined,
                 fecha_inicio: filters.value.fecha_inicio || undefined,
-                fecha_fin: filters.value.fecha_fin || undefined
+                fecha_fin: filters.value.fecha_fin || undefined,
+                mes: filters.value.mes || undefined,
+                anio: filters.value.anio || undefined
             };
 
             const response = await viajesService.getAll(params);
