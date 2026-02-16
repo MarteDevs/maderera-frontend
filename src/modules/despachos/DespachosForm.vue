@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
@@ -89,6 +89,60 @@ const loadInventario = async () => {
 
 const getStockInfo = (id_producto: number) => {
     return inventarioData.value.find(item => item.id_producto === id_producto);
+};
+
+const minaDestinoRef = ref<HTMLSelectElement | null>(null);
+const supervisorRef = ref<HTMLSelectElement | null>(null);
+const fechaRef = ref<HTMLInputElement | null>(null);
+const observacionesRef = ref<HTMLTextAreaElement | null>(null);
+const productRefs = ref<any[]>([]);
+const cantidadRefs = ref<HTMLInputElement[]>([]);
+const obsProductoRefs = ref<HTMLInputElement[]>([]);
+
+// Dynamic RefSetters
+const setProductRef = (el: any, index: number) => {
+    if (el) productRefs.value[index] = el;
+};
+const setCantidadRef = (el: any, index: number) => {
+    if (el) cantidadRefs.value[index] = el;
+};
+const setObsProductoRef = (el: any, index: number) => {
+    if (el) obsProductoRefs.value[index] = el;
+};
+
+// Focus Handlers
+const focusSupervisor = () => supervisorRef.value?.focus();
+const focusFecha = () => fechaRef.value?.focus();
+const focusObservaciones = () => observacionesRef.value?.focus();
+
+const focusFirstProduct = () => {
+    if (formData.value.detalles.length === 0) {
+        addDetalle();
+    } else {
+        // Focus search select input
+        productRefs.value[0]?.focus();
+    }
+};
+
+const focusCantidad = (index: number) => {
+    cantidadRefs.value[index]?.focus();
+};
+
+const focusObservacionProducto = (index: number) => {
+    obsProductoRefs.value[index]?.focus();
+};
+
+const onProductObservationEnter = async (index: number) => {
+    // If it's the last row, add new row and focus it
+    if (index === formData.value.detalles.length - 1) {
+        addDetalle();
+        await nextTick();
+        const newIndex = formData.value.detalles.length - 1;
+        productRefs.value[newIndex]?.focus();
+    } else {
+        // Just move to next product
+        productRefs.value[index + 1]?.focus();
+    }
 };
 
 const loadDespacho = async () => {
@@ -270,16 +324,21 @@ const save = async () => {
 };
 
 onMounted(async () => {
-    maestrosStore.fetchMinas();
-    maestrosStore.fetchSupervisores();
-    
-    await loadInventario();
+    await Promise.all([
+        maestrosStore.fetchMinas(),
+        maestrosStore.fetchSupervisores(),
+        loadInventario()
+    ]);
     
     if (isEditMode.value) {
-        loadDespacho();
+        await loadDespacho();
     } else {
         addDetalle();
     }
+
+    // Focus first field
+    await nextTick();
+    minaDestinoRef.value?.focus();
 });
 </script>
 
@@ -328,7 +387,12 @@ onMounted(async () => {
                             <div class="form-group" :class="{ 'has-error': errors.id_mina }">
                                 <label class="required">Mina Destino</label>
                                 <div class="select-wrapper">
-                                    <select v-model.number="formData.id_mina" class="form-control-premium">
+                                    <select 
+                                        ref="minaDestinoRef"
+                                        v-model.number="formData.id_mina" 
+                                        class="form-control-premium"
+                                        @keydown.enter.prevent="focusSupervisor"
+                                    >
                                         <option :value="undefined">Seleccione una mina</option>
                                         <option v-for="mina in minas" :key="mina.id_mina" :value="mina.id_mina">
                                             {{ mina.nombre }}
@@ -343,7 +407,12 @@ onMounted(async () => {
                             <div class="form-group">
                                 <label>Supervisor Responsable</label>
                                 <div class="select-wrapper">
-                                    <select v-model.number="formData.id_supervisor" class="form-control-premium">
+                                    <select 
+                                        ref="supervisorRef"
+                                        v-model.number="formData.id_supervisor" 
+                                        class="form-control-premium"
+                                        @keydown.enter.prevent="focusFecha"
+                                    >
                                         <option :value="undefined">Seleccione un supervisor</option>
                                         <option v-for="sup in supervisores" :key="sup.id_supervisor" :value="sup.id_supervisor">
                                             {{ sup.nombre }}
@@ -358,9 +427,11 @@ onMounted(async () => {
                                 <label class="required">Fecha de Emisión</label>
                                 <div class="relative">
                                     <input 
+                                        ref="fechaRef"
                                         type="date" 
                                         v-model="formData.fecha_creacion" 
                                         class="form-control-premium"
+                                        @keydown.enter.prevent="focusObservaciones"
                                     />
                                 </div>
                                 <small class="text-muted mt-1 block" style="font-size: 0.75rem;">
@@ -373,10 +444,12 @@ onMounted(async () => {
                         <div class="form-group mt-4 full-width">
                             <label>Observaciones</label>
                             <textarea 
+                                ref="observacionesRef"
                                 v-model="formData.observaciones" 
                                 class="form-control-premium textarea"
                                 rows="2"
                                 placeholder="Ingrese cualquier observación relevante..."
+                                @keydown.enter.prevent="focusFirstProduct"
                             ></textarea>
                         </div>
                     </div>
@@ -426,6 +499,7 @@ onMounted(async () => {
                                         <td>
                                             <div class="product-select-wrapper">
                                                 <SearchableSelect 
+                                                    :ref="(el) => setProductRef(el, index)"
                                                     v-model="detalle.id_producto"
                                                     :options="formattedProductOptions"
                                                     label-key="full_label"
@@ -433,6 +507,7 @@ onMounted(async () => {
                                                     placeholder="Buscar producto..."
                                                     dense
                                                     @change="onProductoChange(index)"
+                                                    @next="focusCantidad(index)"
                                                 />
                                             </div>
                                         </td>
@@ -449,9 +524,11 @@ onMounted(async () => {
                                         </td>
                                         <td>
                                             <input 
+                                                :ref="(el) => setCantidadRef(el, index)"
                                                 type="number"
                                                 v-model.number="detalle.cantidad_despachada"
                                                 @input="onCantidadChange(index)"
+                                                @keydown.enter.prevent="focusObservacionProducto(index)"
                                                 class="form-control-premium dense text-center"
                                                 min="1"
                                                 :max="detalle.stock_actual"
@@ -465,10 +542,12 @@ onMounted(async () => {
                                         </td>
                                         <td>
                                             <input 
+                                                :ref="(el) => setObsProductoRef(el, index)"
                                                 type="text"
                                                 v-model="detalle.observacion"
                                                 class="form-control-premium dense"
                                                 placeholder="..."
+                                                @keydown.enter.prevent="onProductObservationEnter(index)"
                                             />
                                         </td>
                                         <td class="text-center">
