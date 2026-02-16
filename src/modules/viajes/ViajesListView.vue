@@ -3,7 +3,9 @@ import { onMounted, ref, computed } from 'vue';
 import { useViajesStore } from './viajes.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { X, Truck, Filter, ChevronDown, Calendar, Building2, MapPin } from 'lucide-vue-next';
+import { X, Truck, Filter, ChevronDown, Calendar, Building2, MapPin, Eye, Trash2, Download } from 'lucide-vue-next';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import type { Column } from '../../components/ui/DataTable.vue';
 
 import { useMaestrosStore } from '../../stores/maestros.store';
@@ -24,7 +26,7 @@ const activeFiltersCount = computed(() => {
     let count = 0;
     if (filters.value.id_proveedor) count++;
     if (filters.value.id_mina) count++;
-    if (filters.value.mes && filters.value.mes !== (new Date().getMonth() + 1)) count++;
+    if (filters.value.mes) count++;
     if (filters.value.anio && filters.value.anio !== new Date().getFullYear()) count++;
     return count;
 });
@@ -89,11 +91,80 @@ const clearFilters = () => {
         search: '',
         id_proveedor: '',
         id_mina: '',
-        mes: new Date().getMonth() + 1,
+        mes: '',
         anio: new Date().getFullYear(),
         fecha_inicio: '',
         fecha_fin: ''
     });
+};
+
+const handleExport = async () => {
+    try {
+        const fullData = await store.fetchAllForExport();
+        
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Viajes');
+
+        // Define Columns
+        worksheet.columns = [
+            { header: 'CONTROL #', key: 'id_viaje', width: 12 },
+            { header: 'REQUERIMIENTO', key: 'requerimiento', width: 15 },
+            { header: 'PROVEEDOR', key: 'proveedor', width: 20 },
+            { header: 'MINA', key: 'mina', width: 20 },
+            { header: 'PLACA', key: 'placa', width: 15 },
+            { header: 'CONDUCTOR', key: 'conductor', width: 25 },
+            { header: 'FECHA INGRESO', key: 'fecha_ingreso', width: 20 },
+            { header: 'USUARIO', key: 'usuario', width: 15 },
+        ];
+
+        // Style Header
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4B5563' }
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // Add Data
+        fullData.forEach((viaje: any) => {
+            const row = worksheet.addRow({
+                id_viaje: viaje.id_viaje,
+                requerimiento: viaje.requerimiento?.codigo || '-',
+                proveedor: viaje.requerimiento?.proveedor?.nombre || '-',
+                mina: viaje.requerimiento?.mina?.nombre || '-',
+                placa: viaje.placa_vehiculo,
+                conductor: viaje.conductor,
+                fecha_ingreso: new Date(viaje.fecha_ingreso).toLocaleString(),
+                usuario: viaje.created_by
+            });
+
+            // Center align specific columns
+            [1, 2, 7].forEach(colIdx => {
+                row.getCell(colIdx).alignment = { horizontal: 'center' };
+            });
+        });
+
+        // Add Borders
+        worksheet.eachRow((row) => {
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Viajes_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    } catch (error) {
+        console.error('Export error:', error);
+    }
 };
 
 // Cargar datos
@@ -296,9 +367,19 @@ onMounted(() => {
                             </select>
                         </div>
                     </div>
-                     <div class="filter-item" v-if="activeFiltersCount > 0">
-                        <button class="btn-text" @click="clearFilters">Limpiar</button>
+                    <div class="filter-item">
+                        <button @click="clearFilters" class="btn-secondary btn-sm" title="Limpiar todos los filtros">
+                            <Trash2 :size="16" />
+                            Limpiar
+                        </button>
                     </div>
+                </template>
+
+                <template #toolbar-actions>
+                    <button class="btn btn-outline-success mr-2" @click="handleExport" :disabled="loading">
+                        <Download class="icon" />
+                        Exportar Excel
+                    </button>
                 </template>
                     <template #cell-id_viaje="{ value }">
                         <span class="font-medium text-primary">#{{ value }}</span>
@@ -310,7 +391,7 @@ onMounted(() => {
 
                     <template #cell-actions="{ row }">
                         <button class="btn-icon" title="Ver Detalle" @click="openDetails(row)">
-                            Ver Detalle
+                            <Eye class="icon" />
                         </button>
                     </template>
                 </DataTable>

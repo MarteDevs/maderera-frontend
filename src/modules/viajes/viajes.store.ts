@@ -22,7 +22,7 @@ export const useViajesStore = defineStore('viajes', () => {
         id_mina: '',
         fecha_inicio: '',
         fecha_fin: '',
-        mes: new Date().getMonth() + 1, // Default current month
+        mes: '', // Default all months
         anio: new Date().getFullYear()  // Default current year
     });
 
@@ -105,6 +105,31 @@ export const useViajesStore = defineStore('viajes', () => {
         fetchViajes();
     }
 
+    async function fetchAllForExport() {
+        loading.value = true;
+        try {
+            const params: any = {
+                page: 1,
+                limit: 10000, // Fetch all (or a very large number)
+                search: filters.value.search || undefined,
+                id_proveedor: filters.value.id_proveedor || undefined,
+                id_mina: filters.value.id_mina || undefined,
+                fecha_inicio: filters.value.fecha_inicio || undefined,
+                fecha_fin: filters.value.fecha_fin || undefined,
+                mes: filters.value.mes || undefined,
+                anio: filters.value.anio || undefined
+            };
+
+            const response = await viajesService.getAll(params);
+            return response.data || [];
+        } catch (e) {
+            console.error('Error fetching all viajes for export:', e);
+            return [];
+        } finally {
+            loading.value = false;
+        }
+    }
+
     return {
         viajes,
         currentViaje,
@@ -114,6 +139,7 @@ export const useViajesStore = defineStore('viajes', () => {
         filters,
         fetchViajes,
         fetchViajesByRequerimiento,
+        fetchAllForExport,
         createViaje,
         setPage,
         setFilters
