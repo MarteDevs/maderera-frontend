@@ -202,13 +202,7 @@ const showSuccessModal = ref(false);
                         </p>
                     </div>
                 </div>
-                <div class="actions">
-                    <button class="btn-secondary" @click="router.back()">Cancelar</button>
-                    <button ref="saveBtn" class="btn-primary" @click="save" :disabled="saving">
-                        <Save class="icon" />
-                        {{ saving ? 'Guardando...' : 'Guardar Recepción' }}
-                    </button>
-                </div>
+
             </div>
         </header>
 
@@ -392,6 +386,15 @@ const showSuccessModal = ref(false);
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-actions">
+                <button class="btn-secondary" @click="router.back()">Cancelar</button>
+                <button ref="saveBtn" class="btn-primary" @click="save" :disabled="saving">
+                    <Save class="icon" />
+                    {{ saving ? 'Guardando...' : 'Guardar Recepción' }}
+                </button>
             </div>
         </div>
 
