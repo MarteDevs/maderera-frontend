@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { Plus, Edit, Trash2 } from 'lucide-vue-next';
 import { useMaestrosStore } from '../../../stores';
 import { DataTable, FormModal, ConfirmDialog } from '../../../components/ui';
@@ -12,6 +12,26 @@ const showFormModal = ref(false);
 const showDeleteDialog = ref(false);
 const editingSupervisor = ref<Supervisor | null>(null);
 const deletingSupervisor = ref<Supervisor | null>(null);
+
+// Form Navigation Refs
+const nombreInput = ref<HTMLInputElement | null>(null);
+const telefonoInput = ref<HTMLInputElement | null>(null);
+const emailInput = ref<HTMLInputElement | null>(null);
+const saveButton = ref<HTMLButtonElement | null>(null);
+
+const handleEnterNav = (field: string) => {
+    switch (field) {
+        case 'nombre':
+            telefonoInput.value?.focus();
+            break;
+        case 'telefono':
+            emailInput.value?.focus();
+            break;
+        case 'email':
+            saveButton.value?.focus();
+            break;
+    }
+};
 
 const formData = ref({
     nombre: '',
@@ -37,6 +57,9 @@ const openCreateModal = () => {
     editingSupervisor.value = null;
     formData.value = { nombre: '', telefono: '', email: '' };
     showFormModal.value = true;
+    nextTick(() => {
+        nombreInput.value?.focus();
+    });
 };
 
 const openEditModal = (supervisor: Supervisor) => {
@@ -112,21 +135,40 @@ const handleDelete = async () => {
             <form @submit.prevent="handleSubmit" class="form">
                 <div class="form-group">
                     <label>Nombre *</label>
-                    <input v-model="formData.nombre" required />
+                    <input 
+                        ref="nombreInput"
+                        v-model="formData.nombre" 
+                        required 
+                        @keydown.enter.prevent="handleEnterNav('nombre')"
+                    />
                 </div>
                 <div class="form-group">
                     <label>Teléfono</label>
-                    <input v-model="formData.telefono" type="tel" />
+                    <input 
+                        ref="telefonoInput"
+                        v-model="formData.telefono" 
+                        type="tel" 
+                        @keydown.enter.prevent="handleEnterNav('telefono')"
+                    />
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input v-model="formData.email" type="email" />
+                    <input 
+                        ref="emailInput"
+                        v-model="formData.email" 
+                        type="email" 
+                        @keydown.enter.prevent="handleEnterNav('email')"
+                    />
                 </div>
             </form>
 
             <template #footer>
                 <button class="btn btn-secondary" @click="showFormModal = false">Cancelar</button>
-                <button class="btn btn-primary" @click="handleSubmit">Guardar</button>
+                <button 
+                    ref="saveButton"
+                    class="btn btn-primary" 
+                    @click="handleSubmit"
+                >Guardar</button>
             </template>
         </FormModal>
 
