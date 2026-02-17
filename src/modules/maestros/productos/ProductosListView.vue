@@ -17,8 +17,19 @@ const medidaSelect = ref<InstanceType<typeof SearchableSelect> | null>(null);
 const clasificacionSelect = ref<HTMLSelectElement | null>(null);
 const precioInput = ref<HTMLInputElement | null>(null);
 const observacionesTextarea = ref<HTMLTextAreaElement | null>(null);
+const saveButton = ref<HTMLButtonElement | null>(null);
+const proveedorSelects = ref<HTMLSelectElement[]>([]);
+const proveedorInputs = ref<HTMLInputElement[]>([]);
 
-const handleEnterNav = (currentField: string) => {
+// Reset refs arrays before update
+const setProveedorSelectRef = (el: any, index: number) => {
+    if (el) proveedorSelects.value[index] = el;
+};
+const setProveedorInputRef = (el: any, index: number) => {
+    if (el) proveedorInputs.value[index] = el;
+};
+
+const handleEnterNav = (currentField: string, index?: number) => {
     switch (currentField) {
         case 'nombre':
             medidaSelect.value?.focus();
@@ -31,6 +42,22 @@ const handleEnterNav = (currentField: string) => {
             break;
         case 'precio':
             observacionesTextarea.value?.focus();
+            break;
+        case 'observaciones':
+            addProveedorRow();
+            nextTick(() => {
+                // Focus the select of the newly added row (last index)
+                const lastIndex = formData.value.proveedores.length - 1;
+                proveedorSelects.value[lastIndex]?.focus();
+            });
+            break;
+        case 'proveedor_select':
+            if (index !== undefined) {
+                proveedorInputs.value[index]?.focus();
+            }
+            break;
+        case 'proveedor_precio':
+             saveButton.value?.focus();
             break;
     }
 };
@@ -340,6 +367,7 @@ const handlePageChange = (page: number) => {
                         v-model="formData.observaciones"
                         rows="3"
                         placeholder="Observaciones adicionales..."
+                        @keydown.enter.prevent="handleEnterNav('observaciones')"
                     ></textarea>
                 </div>
 
@@ -358,18 +386,25 @@ const handlePageChange = (page: number) => {
 
                     <div v-else class="proveedores-list">
                         <div v-for="(item, index) in formData.proveedores" :key="index" class="proveedor-row">
-                            <select v-model="item.id_proveedor" required>
+                            <select 
+                                :ref="(el) => setProveedorSelectRef(el, index)"
+                                v-model="item.id_proveedor" 
+                                required
+                                @keydown.enter.prevent="handleEnterNav('proveedor_select', index)"
+                            >
                                 <option :value="0" disabled>Seleccionar Proveedor</option>
                                 <option v-for="prov in maestrosStore.proveedores" :key="prov.id_proveedor" :value="prov.id_proveedor">
                                     {{ prov.nombre }}
                                 </option>
                             </select>
                             <input 
+                                :ref="(el) => setProveedorInputRef(el, index)"
                                 v-model.number="item.precio_compra_sugerido" 
                                 type="number" 
                                 step="0.01" 
                                 placeholder="Precio S/."
                                 required
+                                @keydown.enter.prevent="handleEnterNav('proveedor_precio', index)"
                             />
                             <button type="button" class="btn-icon btn-delete-row" @click="removeProveedorRow(index)">
                                 <Trash2 class="icon-sm" />
@@ -389,6 +424,7 @@ const handlePageChange = (page: number) => {
                     Cancelar
                 </button>
                 <button
+                    ref="saveButton"
                     type="submit"
                     class="btn btn-primary"
                     @click="handleSubmit"
