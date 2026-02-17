@@ -6,7 +6,7 @@ import { useMaestrosStore } from '../../stores/maestros.store';
 import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X, FileText } from 'lucide-vue-next';
+import { Plus, Eye, Edit, Trash2, TruckIcon, Package, XCircle, Filter, ChevronDown, Calendar, X, FileText, Download } from 'lucide-vue-next';
 import type { Column } from '../../components/ui/DataTable.vue';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -324,6 +324,175 @@ const anularDespacho = async () => {
     }
 };
 
+// Export Logic
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
+const handleExport = async () => {
+    try {
+        loading.value = true;
+        // 1. Fetch all data
+        const fullData = await despachosStore.fetchAllForExport({ 
+            ...filters.value,
+            mes: filters.value.mes,
+            anio: filters.value.anio
+        } as any);
+        
+        // 2. Load inventory for prices
+        await loadInventario();
+
+        // 3. Create Workbook
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Despachos');
+
+        // 4. Define Columns
+        worksheet.columns = [
+            { header: 'CÓDIGO', key: 'codigo', width: 15 },
+            { header: 'ESTADO', key: 'estado', width: 15 },
+            { header: 'FECHA CREACIÓN', key: 'fecha', width: 15 },
+            { header: 'HORA', key: 'hora', width: 10 },
+            { header: 'MINA', key: 'mina', width: 20 },
+            { header: 'SUPERVISOR', key: 'supervisor', width: 20 },
+            { header: 'PRODUCTO', key: 'producto', width: 25 },
+            { header: 'MEDIDA', key: 'medida', width: 15 },
+            { header: 'CANTIDAD', key: 'cantidad', width: 10 },
+            { header: 'P. COMPRA', key: 'precio_compra', width: 15 },
+            { header: 'TOTAL COMPRA', key: 'total_compra', width: 15 },
+            { header: 'P. VENTA', key: 'precio_venta', width: 15 },
+            { header: 'TOTAL VENTA', key: 'total_venta', width: 15 },
+            { header: 'OBSERVACIÓN', key: 'observacion', width: 30 },
+        ];
+
+        // 5. Apply Header Styles
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF4B5563' } // Gray-600
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        // 6. Process Data
+        fullData.forEach((despacho: any) => {
+            const date = new Date(despacho.fecha_creacion);
+            const fechaItems = date.toLocaleDateString();
+            const horaItems = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (!despacho.despacho_detalles || despacho.despacho_detalles.length === 0) {
+                 const row = worksheet.addRow({
+                    codigo: despacho.codigo,
+                    estado: despacho.estado,
+                    fecha: fechaItems,
+                    hora: horaItems,
+                    mina: despacho.minas?.nombre || '-',
+                    supervisor: despacho.supervisores?.nombre || '-',
+                    producto: '-', medida: '-', cantidad: 0,
+                    precio_compra: 0, total_compra: 0,
+                    precio_venta: 0, total_venta: 0,
+                    observacion: despacho.observaciones || ''
+                });
+                styleRow(row, despacho.estado);
+                return;
+            }
+
+            despacho.despacho_detalles.forEach((det: any) => {
+                // Get prices from inventory cache
+                const precios = getPrecioInfo(det.id_producto);
+                const precioCompra = precios?.precio_compra || 0;
+                const precioVenta = precios?.precio_venta || 0;
+                const cantidad = Number(det.cantidad_despachada) || 0;
+
+                const row = worksheet.addRow({
+                    codigo: despacho.codigo,
+                    estado: despacho.estado,
+                    fecha: fechaItems,
+                    hora: horaItems,
+                    mina: despacho.minas?.nombre || '-',
+                    supervisor: despacho.supervisores?.nombre || '-',
+                    producto: det.productos?.nombre || '-',
+                    medida: det.medidas?.descripcion || det.productos?.medidas?.descripcion || '-',
+                    cantidad: cantidad,
+                    precio_compra: precioCompra,
+                    total_compra: cantidad * precioCompra,
+                    precio_venta: precioVenta,
+                    total_venta: cantidad * precioVenta,
+                    observacion: det.observacion || despacho.observaciones || ''
+                });
+                styleRow(row, despacho.estado);
+            });
+        });
+
+        // 7. Apply Border and Formatting
+        worksheet.eachRow((row, rowNumber) => {
+            if (rowNumber > 1) { // Skip header
+                // Currency cols: 10, 11, 12, 13
+                [10, 11, 12, 13].forEach(col => {
+                    row.getCell(col).numFmt = '"S/."#,##0.00';
+                    row.getCell(col).alignment = { horizontal: 'right' };
+                });
+                // Center cols: 1, 2, 3, 4, 9
+                [1, 2, 3, 4, 9].forEach(col => {
+                    row.getCell(col).alignment = { horizontal: 'center' };
+                });
+            }
+            row.eachCell((cell) => {
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+        });
+
+         // 8. Save
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Despachos_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+    } catch (error) {
+        console.error('Error exportando excel:', error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+const styleRow = (row: ExcelJS.Row, estado: string) => {
+    const statusCell = row.getCell(2);
+    let argbColor = 'FF000000';
+    let bgColor = 'FFFFFFFF';
+
+    switch (estado) {
+        case 'PREPARANDO':
+            bgColor = 'FFE0F2FE'; // Blue-100 (Info)
+            argbColor = 'FF0369A1'; // Blue-700
+            break;
+        case 'EN_TRANSITO':
+            bgColor = 'FFF7EDD5'; // Orange-100 (Warning) - similar to yellow
+            argbColor = 'FFB45309'; // Orange-700
+            break;
+        case 'ENTREGADO':
+            bgColor = 'FFDCFCE7'; // Green-100 (Success)
+            argbColor = 'FF15803D'; // Green-700
+            break;
+        case 'ANULADO':
+            bgColor = 'FEE2E2'; // Red-100
+            argbColor = 'B91C1C'; // Red-700
+            break;
+    }
+
+    statusCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: bgColor }
+    };
+    statusCell.font = {
+        color: { argb: argbColor },
+        bold: true
+    };
+};
+
 onMounted(() => {
     fetchDespachos();
     maestrosStore.fetchMinas();
@@ -557,6 +726,15 @@ onMounted(() => {
                     <button @click="clearFilters" class="btn btn-secondary btn-sm" title="Limpiar Filtros">
                         <Trash2 class="icon-sm" />
                     </button>
+                    
+                    <button @click="handleExport" class="btn btn-outline-success btn-sm ml-2" title="Exportar Excel" :disabled="loading">
+                        <Download class="icon-sm" />
+                        <span class="desktop-only ml-1">Exportar</span>
+                    </button>
+                </template>
+
+                <template #toolbar-actions>
+                     <!-- Toolbar actions slot just in case is supported, otherwise it will stay in toolbar-filters -->
                 </template>
 
                 <template #cell-fecha_creacion="{ value }">

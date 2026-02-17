@@ -157,6 +157,33 @@ export const useDespachosStore = defineStore('despachos', () => {
         }
     }
 
+    async function fetchAllForExport(filters?: DespachoFilters & { mes?: string, anio?: number }) {
+        try {
+            const apiFilters: DespachoFilters = { ...filters, page: 1, limit: 10000 }; // High limit for export
+
+            if (filters?.mes && filters?.anio) {
+                const year = filters.anio;
+                const month = parseInt(filters.mes) - 1;
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0);
+                apiFilters.fecha_desde = startDate.toISOString().split('T')[0];
+                apiFilters.fecha_hasta = endDate.toISOString().split('T')[0];
+            } else if (filters?.anio && !filters.mes) {
+                apiFilters.fecha_desde = `${filters.anio}-01-01`;
+                apiFilters.fecha_hasta = `${filters.anio}-12-31`;
+            }
+
+            delete (apiFilters as any).mes;
+            delete (apiFilters as any).anio;
+
+            const response = await despachosService.getAll(apiFilters);
+            return response.data;
+        } catch (error: any) {
+            console.error('Error al cargar datos para exportar:', error);
+            throw error;
+        }
+    }
+
     return {
         despachos,
         currentDespacho,
@@ -169,6 +196,7 @@ export const useDespachosStore = defineStore('despachos', () => {
         deleteDespacho,
         cambiarATransito,
         marcarEntregado,
-        anularDespacho
+        anularDespacho,
+        fetchAllForExport
     };
 });
