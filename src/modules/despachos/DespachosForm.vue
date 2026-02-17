@@ -25,7 +25,7 @@ const loadingInventario = ref(false);
 interface DetalleForm {
     id_producto: number;
     id_medida: number;
-    cantidad_despachada: number;
+    cantidad_despachada: number | null;
     observacion: string;
     producto_nombre?: string;
     medida_descripcion?: string;
@@ -194,7 +194,7 @@ const addDetalle = () => {
     formData.value.detalles.push({
         id_producto: 0,
         id_medida: 0,
-        cantidad_despachada: 0,
+        cantidad_despachada: null,
         observacion: '',
         stock_actual: 0,
         precio_compra: 0,
@@ -239,8 +239,9 @@ const onCantidadChange = (index: number) => {
 const calcularSubtotal = (index: number) => {
     const detalle = formData.value.detalles[index];
     if (detalle) {
-        detalle.total_compra = detalle.cantidad_despachada * (detalle.precio_compra || 0);
-        detalle.total_venta = detalle.cantidad_despachada * (detalle.precio_venta || 0);
+        const cantidad = detalle.cantidad_despachada || 0;
+        detalle.total_compra = cantidad * (detalle.precio_compra || 0);
+        detalle.total_venta = cantidad * (detalle.precio_venta || 0);
     }
 };
 
@@ -266,7 +267,7 @@ const validate = (): boolean => {
     }
 
     const hasInvalidDetalles = formData.value.detalles.some(
-        d => !d.id_producto || !d.id_medida || d.cantidad_despachada <= 0
+        d => !d.id_producto || !d.id_medida || !d.cantidad_despachada || d.cantidad_despachada <= 0
     );
 
     if (hasInvalidDetalles) {
@@ -275,7 +276,7 @@ const validate = (): boolean => {
     }
 
     const hasStockIssues = formData.value.detalles.some(
-        d => d.cantidad_despachada > (d.stock_actual || 0)
+        d => (d.cantidad_despachada || 0) > (d.stock_actual || 0)
     );
 
     if (hasStockIssues) {
@@ -302,7 +303,7 @@ const save = async () => {
             detalles: formData.value.detalles.map(d => ({
                 id_producto: d.id_producto,
                 id_medida: d.id_medida,
-                cantidad_despachada: d.cantidad_despachada,
+                cantidad_despachada: d.cantidad_despachada || 0,
                 observacion: d.observacion
             }))
         };
@@ -512,7 +513,7 @@ onMounted(async () => {
                                             </div>
                                         </td>
                                         <td class="text-center">
-                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
+                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < (detalle.cantidad_despachada || 0) }">
                                                 {{ detalle.stock_actual || 0 }}
                                             </span>
                                         </td>
@@ -531,7 +532,7 @@ onMounted(async () => {
                                                 @keydown.enter.prevent="focusObservacionProducto(index)"
                                                 class="form-control-premium dense text-center"
                                                 min="1"
-                                                :max="detalle.stock_actual"
+                                                :max="detalle.stock_actual || undefined"
                                             />
                                         </td>
                                         <td class="text-right font-mono font-bold text-gray-700">
@@ -605,7 +606,7 @@ onMounted(async () => {
                                         </div>
                                         <div class="mobile-field">
                                             <label>Stock</label>
-                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < detalle.cantidad_despachada }">
+                                            <span class="stock-pill" :class="{ 'low': (detalle.stock_actual || 0) < (detalle.cantidad_despachada || 0) }">
                                                 {{ detalle.stock_actual || 0 }}
                                             </span>
                                         </div>
