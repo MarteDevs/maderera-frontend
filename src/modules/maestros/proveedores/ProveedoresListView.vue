@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, nextTick } from 'vue';
 import { Plus, Edit, Trash2 } from 'lucide-vue-next';
 import { useMaestrosStore } from '../../../stores';
 import { DataTable, FormModal, ConfirmDialog } from '../../../components/ui';
@@ -12,6 +12,34 @@ const showFormModal = ref(false);
 const showDeleteDialog = ref(false);
 const editingProveedor = ref<Proveedor | null>(null);
 const deletingProveedor = ref<Proveedor | null>(null);
+
+// Form Navigation Refs
+const nombreInput = ref<HTMLInputElement | null>(null);
+const razonSocialInput = ref<HTMLInputElement | null>(null);
+const rucInput = ref<HTMLInputElement | null>(null);
+const contactoInput = ref<HTMLInputElement | null>(null);
+const telefonoInput = ref<HTMLInputElement | null>(null);
+const saveButton = ref<HTMLButtonElement | null>(null);
+
+const handleEnterNav = (field: string) => {
+    switch (field) {
+        case 'nombre':
+            razonSocialInput.value?.focus();
+            break;
+        case 'razon_social':
+            rucInput.value?.focus();
+            break;
+        case 'ruc':
+            contactoInput.value?.focus();
+            break;
+        case 'contacto':
+            telefonoInput.value?.focus();
+            break;
+        case 'telefono':
+            saveButton.value?.focus();
+            break;
+    }
+};
 
 const formData = ref({
     nombre: '',
@@ -41,6 +69,9 @@ const openCreateModal = () => {
     editingProveedor.value = null;
     formData.value = { nombre: '', razon_social: '', ruc: '', contacto: '', telefono: '' };
     showFormModal.value = true;
+    nextTick(() => {
+        nombreInput.value?.focus();
+    });
 };
 
 const openEditModal = (proveedor: Proveedor) => {
@@ -124,31 +155,58 @@ const handleDelete = async () => {
             <form @submit.prevent="handleSubmit" class="form">
                 <div class="form-group">
                     <label>Nombre *</label>
-                    <input v-model="formData.nombre" required />
+                    <input 
+                        ref="nombreInput"
+                        v-model="formData.nombre" 
+                        required 
+                        @keydown.enter.prevent="handleEnterNav('nombre')"
+                    />
                 </div>
                 <div class="form-group">
                     <label>Razón Social</label>
-                    <input v-model="formData.razon_social" />
+                    <input 
+                        ref="razonSocialInput"
+                        v-model="formData.razon_social" 
+                        @keydown.enter.prevent="handleEnterNav('razon_social')"
+                    />
                 </div>
                 <div class="form-group">
                     <label>RUC</label>
-                    <input v-model="formData.ruc" maxlength="11" />
+                    <input 
+                        ref="rucInput"
+                        v-model="formData.ruc" 
+                        maxlength="11" 
+                        @keydown.enter.prevent="handleEnterNav('ruc')"
+                    />
                 </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Contacto</label>
-                        <input v-model="formData.contacto" />
+                        <input 
+                            ref="contactoInput"
+                            v-model="formData.contacto" 
+                            @keydown.enter.prevent="handleEnterNav('contacto')"
+                        />
                     </div>
                     <div class="form-group">
                         <label>Teléfono</label>
-                        <input v-model="formData.telefono" type="tel" />
+                        <input 
+                            ref="telefonoInput"
+                            v-model="formData.telefono" 
+                            type="tel" 
+                            @keydown.enter.prevent="handleEnterNav('telefono')"
+                        />
                     </div>
                 </div>
             </form>
 
             <template #footer>
                 <button class="btn btn-secondary" @click="showFormModal = false">Cancelar</button>
-                <button class="btn btn-primary" @click="handleSubmit">Guardar</button>
+                <button 
+                    ref="saveButton"
+                    class="btn btn-primary" 
+                    @click="handleSubmit"
+                >Guardar</button>
             </template>
         </FormModal>
 
