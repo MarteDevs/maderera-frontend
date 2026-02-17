@@ -293,7 +293,7 @@ const handlePageChange = (page: number) => {
                             placeholder="Buscar o crear medida..."
                             creatable
                             @create="handleCreateMedida"
-                            @enter="handleEnterNav('medida')"
+                            @next="handleEnterNav('medida')"
                         />
                     </div>
 
