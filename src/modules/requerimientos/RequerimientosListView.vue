@@ -162,8 +162,6 @@ const handleExport = async () => {
             { header: 'MINA', key: 'mina', width: 20 },
             { header: 'SUPERVISOR', key: 'supervisor', width: 20 },
             { header: 'TOTAL CANT.', key: 'total_cantidad', width: 12 },
-            { header: 'TOTAL PROV.', key: 'total_prov', width: 15 },
-            { header: 'TOTAL MINA', key: 'total_mina', width: 15 },
             { header: 'PRODUCTO', key: 'producto', width: 25 },
             { header: 'MEDIDA', key: 'medida', width: 15 },
             { header: 'CANTIDAD', key: 'cantidad', width: 10 },
@@ -197,8 +195,6 @@ const handleExport = async () => {
                 mina: req.minas?.nombre,
                 supervisor: req.supervisores?.nombre,
                 total_cantidad: totals.quantity,
-                total_prov: totals.provider,
-                total_mina: totals.mine,
             };
 
             // If no details, add single row
@@ -253,16 +249,16 @@ const handleExport = async () => {
 
 // Helper function to style rows based on status
 const styleRow = (row: ExcelJS.Row, estado: string) => {
-    // Currency Format for Price Columns
-    const currencyCols = [9, 10, 14, 15, 16, 17]; // 1-based indices
+    // Currency Format for Price Columns (updated indices after removing totals)
+    const currencyCols = [12, 13, 14, 15]; // 1-based indices
     currencyCols.forEach(colIdx => {
         const cell = row.getCell(colIdx);
         cell.numFmt = '"S/."#,##0.00';
         cell.alignment = { horizontal: 'right' };
     });
 
-    // Center Align Date & Status Columns
-    [1, 2, 3, 4, 12, 13].forEach(colIdx => {
+    // Center Align Date & Status Columns (updated indices)
+    [1, 2, 3, 4, 10, 11].forEach(colIdx => {
         row.getCell(colIdx).alignment = { horizontal: 'center' };
     });
 
