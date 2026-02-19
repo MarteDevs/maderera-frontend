@@ -2,8 +2,10 @@
 import { ref, onMounted, computed, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
-import { ArrowLeft, Save, Plus, Trash } from 'lucide-vue-next';
+import { ArrowLeft, Save, Plus, Trash, AlertTriangle } from 'lucide-vue-next';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
+import FormModal from '../../components/ui/FormModal.vue';
+import { useToast } from '../../composables/useToast';
 import { 
     minasService, 
     proveedoresService, 
@@ -16,6 +18,7 @@ import type { Mina, Proveedor, Supervisor, Producto } from '../../types/models';
 const router = useRouter();
 const route = useRoute();
 const store = useRequerimientosStore();
+const { warning, error: showError } = useToast();
 
 const isEditing = computed(() => route.params.id !== undefined);
 const pageTitle = computed(() => isEditing.value ? 'Editar Requerimiento' : 'Nuevo Requerimiento');
@@ -167,6 +170,20 @@ const observacionRef = ref<HTMLTextAreaElement | null>(null);
 // Refs for dynamic rows (Map: rowIndex -> { fieldName: element })
 const detailRefs = ref(new Map<number, { [key: string]: HTMLElement | any }>());
 
+// Modal State
+const showConfirmModal = ref(false);
+
+// Computed for Summary
+const selectedProveedor = computed(() => proveedores.value.find(p => p.id_proveedor === Number(formData.value.id_proveedor)));
+const selectedMina = computed(() => minas.value.find(m => m.id_mina === Number(formData.value.id_mina)));
+const selectedSupervisor = computed(() => supervisores.value.find(s => s.id_supervisor === Number(formData.value.id_supervisor)));
+
+const totalEstimado = computed(() => {
+    return formData.value.detalles.reduce((acc, d) => {
+        return acc + (Number(d.cantidad_solicitada || 0) * Number(d.precio_mina || 0));
+    }, 0);
+});
+
 const setDetailRef = (el: any, rowIndex: number, field: string) => {
     if (el) {
         if (!detailRefs.value.has(rowIndex)) {
@@ -283,24 +300,33 @@ const handleObsEnter = async (index: number) => {
 };
 
 const save = async () => {
+    // Validaciones básicas
+    if (!formData.value.id_proveedor || !formData.value.id_mina) {
+        warning('Complete los campos obligatorios');
+        return;
+    }
+
+    if (formData.value.detalles.length === 0) {
+        warning('Agregue al menos un producto');
+        return;
+    }
+
+    // Validar cantidades
+    const invalidItems = formData.value.detalles.some(d => !d.id_producto || !d.cantidad_solicitada || d.cantidad_solicitada <= 0);
+    if (invalidItems) {
+        warning('Verifique que todos los items tengan producto y cantidad válida');
+        return;
+    }
+
+    // Abrir modal de confirmación
+    showConfirmModal.value = true;
+};
+
+const executeSave = async () => {
     saving.value = true;
-// ... (save function continues)
+    showConfirmModal.value = false;
 
-// ... existing code ...
-
-// ... existing code ...
     try {
-        // Validaciones básicas
-        if (!formData.value.id_proveedor || !formData.value.id_mina) {
-            alert('Complete los campos obligatorios');
-            return;
-        }
-
-        if (formData.value.detalles.length === 0) {
-            alert('Agregue al menos un producto');
-            return;
-        }
-
         const payload = {
             ...formData.value,
             id_proveedor: Number(formData.value.id_proveedor),
@@ -321,9 +347,9 @@ const save = async () => {
             await store.createRequerimiento(payload as any);
         }
         router.push('/requirements');
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
-        alert('Error al guardar');
+        showError(error.message || 'Error al guardar');
     } finally {
         saving.value = false;
     }
@@ -544,11 +570,161 @@ onMounted(async () => {
                 </button>
             </div>
         </div>
+
+        <FormModal
+            v-model:visible="showConfirmModal"
+            title="Confirmar Requerimiento"
+            :loading="saving"
+            size="lg"
+        >
+            <div class="confirmation-content">
+                <div class="alert-box mb-4">
+                    <AlertTriangle class="text-warning icon-md" />
+                    <p>Por favor verifique los datos antes de guardar.</p>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <label>Proveedor:</label>
+                        <span>{{ selectedProveedor?.nombre || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Mina Destino:</label>
+                        <span>{{ selectedMina?.nombre || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Supervisor:</label>
+                        <span>{{ selectedSupervisor?.nombre || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Fecha Emisión:</label>
+                        <span>{{ formData.fecha_emision }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Fecha Prometida:</label>
+                        <span>{{ formData.fecha_prometida }}</span>
+                    </div>
+                </div>
+
+                <h4 class="mt-4 mb-2">Resumen de Productos</h4>
+                <div class="table-responsive summary-table-container">
+                    <table class="details-table summary-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cant.</th>
+                                <th class="text-right">Precio Mina</th>
+                                <th class="text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="(detalle, idx) in formData.detalles" :key="idx">
+                                <td>
+                                    {{ formattedProductOptions.find(p => p.id_producto === detalle.id_producto)?.full_label || '-' }}
+                                    <div v-if="detalle.observacion" class="text-xs text-muted">{{ detalle.observacion }}</div>
+                                </td>
+                                <td class="text-center">{{ detalle.cantidad_solicitada }}</td>
+                                <td class="text-right">S/. {{ Number(detalle.precio_mina).toFixed(2) }}</td>
+                                <td class="text-right font-medium">S/. {{ (Number(detalle.cantidad_solicitada) * Number(detalle.precio_mina)).toFixed(2) }}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right font-bold">Total Estimado (Ref.)</td>
+                                <td class="text-right font-bold text-lg">S/. {{ totalEstimado.toFixed(2) }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <template #footer>
+                <button class="btn-secondary" @click="showConfirmModal = false" :disabled="saving">
+                    Seguir Editando
+                </button>
+                <button class="btn-primary" @click="executeSave" :disabled="saving">
+                    <Save class="icon" />
+                    {{ saving ? 'Guardando...' : 'Confirmar y Guardar' }}
+                </button>
+            </template>
+        </FormModal>
     </div>
 </template>
 
 <style scoped>
 @import '../../assets/styles/responsive-forms.css';
+
+/* Modal Summary Styles */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-item label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.summary-item span {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.summary-table-container {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.summary-table th {
+    background-color: #f3f4f6;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.summary-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.summary-table tfoot td {
+    background-color: #f9fafb;
+    border-top: 2px solid var(--border);
+}
+
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    color: #9a3412;
+}
+
+.text-warning { color: #f59e0b; }
+.text-muted { color: #6b7280; }
+.text-xs { font-size: 0.75rem; }
+.text-lg { font-size: 1.125rem; }
+.font-medium { font-weight: 500; }
+.font-bold { font-weight: 700; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-4 { margin-top: 1rem; }
 
 .btn-success {
     background-color: #10b981; /* Emerald 500 */
