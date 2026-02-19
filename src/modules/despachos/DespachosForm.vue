@@ -40,6 +40,7 @@ const formData = ref({
     id_mina: undefined as number | undefined,
     id_supervisor: undefined as number | undefined,
     id_viaje: undefined as number | undefined,
+    numero_vale: '',
     fecha_creacion: new Date().toISOString().split('T')[0], // Default today
     observaciones: '',
     detalles: [] as DetalleForm[]
@@ -94,6 +95,7 @@ const getStockInfo = (id_producto: number) => {
 const minaDestinoRef = ref<HTMLSelectElement | null>(null);
 const supervisorRef = ref<HTMLSelectElement | null>(null);
 const fechaRef = ref<HTMLInputElement | null>(null);
+const valeRef = ref<HTMLInputElement | null>(null);
 const observacionesRef = ref<HTMLTextAreaElement | null>(null);
 const productRefs = ref<any[]>([]);
 const cantidadRefs = ref<HTMLInputElement[]>([]);
@@ -113,6 +115,7 @@ const setObsProductoRef = (el: any, index: number) => {
 // Focus Handlers
 const focusSupervisor = () => supervisorRef.value?.focus();
 const focusFecha = () => fechaRef.value?.focus();
+const focusVale = () => valeRef.value?.focus();
 const focusObservaciones = () => observacionesRef.value?.focus();
 
 const focusFirstProduct = () => {
@@ -162,6 +165,7 @@ const loadDespacho = async () => {
             id_mina: despacho.id_mina,
             id_supervisor: despacho.id_supervisor,
             id_viaje: despacho.id_viaje,
+            numero_vale: despacho.numero_vale || '',
             fecha_creacion: despacho.fecha_creacion ? new Date(despacho.fecha_creacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             observaciones: despacho.observaciones || '',
             detalles: despacho.despacho_detalles.map((d: any) => {
@@ -298,6 +302,7 @@ const save = async () => {
             id_mina: formData.value.id_mina!,
             id_supervisor: formData.value.id_supervisor,
             id_viaje: formData.value.id_viaje,
+            numero_vale: formData.value.numero_vale,
             observaciones: formData.value.observaciones,
             fecha_creacion: formData.value.fecha_creacion,
             detalles: formData.value.detalles.map(d => ({
@@ -432,12 +437,25 @@ onMounted(async () => {
                                         type="date" 
                                         v-model="formData.fecha_creacion" 
                                         class="form-control-premium"
-                                        @keydown.enter.prevent="focusObservaciones"
+                                        @keydown.enter.prevent="focusVale"
                                     />
                                 </div>
                                 <small class="text-muted mt-1 block" style="font-size: 0.75rem;">
                                     Código: DSP-{{ new Date(formData.fecha_creacion || new Date()).getFullYear() }}-XXXX
                                 </small>
+                            </div>
+
+                            <!-- Col 4: Nro Vale / Guía -->
+                            <div class="form-group">
+                                <label>Nro. Vale / Guía</label>
+                                <input 
+                                    ref="valeRef"
+                                    type="text" 
+                                    v-model="formData.numero_vale" 
+                                    class="form-control-premium"
+                                    placeholder="Ej: 001-001234"
+                                    @keydown.enter.prevent="focusObservaciones"
+                                />
                             </div>
                         </div>
 

@@ -150,6 +150,7 @@ const motivoAnulacion = ref('');
 const columns: Column[] = [
     { key: 'codigo', label: 'Código', sortable: true },
     { key: 'fecha_creacion', label: 'Fecha Creación', sortable: true },
+    { key: 'numero_vale', label: 'N° Vale/Guía' },
     { key: 'mina', label: 'Mina' },
     { key: 'estado', label: 'Estado' },
     { key: 'total_productos', label: 'Total Productos' },
@@ -348,6 +349,7 @@ const handleExport = async () => {
         // 4. Define Columns
         worksheet.columns = [
             { header: 'CÓDIGO', key: 'codigo', width: 15 },
+            { header: 'N° VALE', key: 'numero_vale', width: 15 },
             { header: 'ESTADO', key: 'estado', width: 15 },
             { header: 'FECHA CREACIÓN', key: 'fecha', width: 15 },
             { header: 'HORA', key: 'hora', width: 10 },
@@ -382,6 +384,7 @@ const handleExport = async () => {
             if (!despacho.despacho_detalles || despacho.despacho_detalles.length === 0) {
                  const row = worksheet.addRow({
                     codigo: despacho.codigo,
+                    numero_vale: despacho.numero_vale || '-',
                     estado: despacho.estado,
                     fecha: fechaItems,
                     hora: horaItems,
@@ -405,6 +408,7 @@ const handleExport = async () => {
 
                 const row = worksheet.addRow({
                     codigo: despacho.codigo,
+                    numero_vale: despacho.numero_vale || '-',
                     estado: despacho.estado,
                     fecha: fechaItems,
                     hora: horaItems,
@@ -520,7 +524,7 @@ onMounted(() => {
                 <input 
                     type="text" 
                     class="mobile-search-input" 
-                    placeholder="Buscar por código..."
+                    placeholder="Buscar por código, vale..."
                     v-model="filters.search"
                     @input="handleSearch(filters.search)"
                 />
@@ -665,7 +669,7 @@ onMounted(() => {
                 :data="despachos"
                 :loading="loading"
                 searchable
-                search-placeholder="Buscar por código..."
+                search-placeholder="Buscar por código, vale..."
                 :current-page="pagination.page"
                 :total-pages="pagination.totalPages"
                 :total="pagination.total"
@@ -739,6 +743,10 @@ onMounted(() => {
 
                 <template #cell-fecha_creacion="{ value }">
                     <span>{{ new Date(value).toLocaleDateString() }}</span>
+                </template>
+
+                <template #cell-numero_vale="{ value }">
+                    <span class="font-medium">{{ value || '-' }}</span>
                 </template>
 
                 <template #cell-mina="{ row }">
