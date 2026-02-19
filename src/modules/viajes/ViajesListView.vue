@@ -467,11 +467,11 @@ onMounted(() => {
                 </template>
 
                 <template #toolbar-actions>
-                    <button class="btn-primary mr-2" @click="router.push('/viajes/new')">
+                    <button class="btn-primary-red mr-2" @click="router.push('/viajes/new')">
                         <Truck class="icon" />
                         Registrar Viaje
                     </button>
-                    <button class="btn btn-outline-success" @click="handleExport" :disabled="loading">
+                    <button class="btn-outline-red" @click="handleExport" :disabled="loading">
                         <Download class="icon" />
                         Exportar Excel
                     </button>
@@ -828,4 +828,55 @@ onMounted(() => {
 .flex-center { display: flex; align-items: center; gap: 0.5rem; }
 .bold { font-weight: 600; }
 .flex-col { display: flex; flex-direction: column; }
+
+.btn-primary-red {
+    background-color: #dc2626; /* red-600 */
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary-red:hover {
+    background-color: #b91c1c; /* red-700 */
+}
+
+.btn-outline-red {
+    background-color: transparent;
+    color: #dc2626;
+    border: 1px solid #dc2626;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-outline-red:hover:not(:disabled) {
+    background-color: #fef2f2; /* red-50 */
+}
+
+.btn-outline-red:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-primary-red, .btn-outline-red {
+        justify-content: center;
+    }
+}
 </style>
