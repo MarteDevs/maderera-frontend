@@ -3,8 +3,9 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { requerimientosService, type Requerimiento } from '../requerimientos/requerimientos.service';
-import { ArrowLeft, Save, Truck } from 'lucide-vue-next';
+import { ArrowLeft, Save, Truck, AlertTriangle } from 'lucide-vue-next';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
+import FormModal from '../../components/ui/FormModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -193,8 +194,18 @@ const save = async () => {
     const excesos = formData.value.detalles.some(d => d.cantidad_recibida > d.cantidad_pendiente);
     if (excesos && !confirm('Algunas cantidades superan lo pendiente. ¿Desea continuar?')) return;
 
+    // Mostrar modal de confirmación
+    showConfirmModal.value = true;
+};
+
+const executeSave = async () => {
     saving.value = true;
+    showConfirmModal.value = false;
+    
     try {
+        // Recalcular items recibidos por si cambiaron (aunque el modal bloquea edición, es seguro)
+        const itemsRecibidos = formData.value.detalles.filter(d => d.cantidad_recibida > 0);
+        
         const payload = {
             id_requerimiento: Number(selectedReqId.value),
             numero_vale: formData.value.numero_vale,
@@ -211,7 +222,7 @@ const save = async () => {
             }))
         };
 
-    const success = await store.createViaje(payload);
+        const success = await store.createViaje(payload);
         if (success) {
             showSuccessModal.value = true;
         } else {
@@ -240,6 +251,7 @@ onMounted(async () => {
 
 // Modal state
 const showSuccessModal = ref(false);
+const showConfirmModal = ref(false);
 </script>
 
 <template>
@@ -483,6 +495,97 @@ const showSuccessModal = ref(false);
                 </button>
             </div>
         </div>
+
+        <!-- Confirmation Modal -->
+        <FormModal
+            v-model:visible="showConfirmModal"
+            title="Confirmar Recepción"
+            :loading="saving"
+            size="lg"
+        >
+            <div class="confirmation-content">
+                <div class="alert-box mb-4">
+                    <AlertTriangle class="text-warning icon-md" />
+                    <p>Verifique los datos de recepción antes de confirmar.</p>
+                </div>
+
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <label>Requerimiento:</label>
+                        <span>{{ requerimiento?.codigo || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Proveedor:</label>
+                        <span>{{ requerimiento?.proveedor?.nombre || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Mina:</label>
+                        <span>{{ requerimiento?.mina?.nombre || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>N° Vale:</label>
+                        <span>{{ formData.numero_vale || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>N° Viaje (Manual):</label>
+                        <span>{{ formData.etiqueta_viaje || '-' }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Vehículo/Conductor:</label>
+                        <span>{{ formData.placa_vehiculo }} / {{ formData.conductor }}</span>
+                    </div>
+                    <div class="summary-item full-width">
+                        <label>Fecha Recepción:</label>
+                        <span>{{ new Date(formData.fecha_ingreso).toLocaleString() }}</span>
+                    </div>
+                    <div class="summary-item full-width" v-if="formData.observaciones">
+                        <label>Observaciones:</label>
+                        <span>{{ formData.observaciones }}</span>
+                    </div>
+                </div>
+
+                <h4 class="mt-4 mb-2">Materiales a Recibir</h4>
+                <div class="table-responsive summary-table-container">
+                    <table class="details-table summary-table">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th class="text-center">Cant. Recibida</th>
+                                <th>Estado</th>
+                                <th>Obs. Item</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="detalle in formData.detalles.filter(d => d.cantidad_recibida > 0)" :key="detalle.id_detalle_requerimiento">
+                                <td>
+                                    <strong>{{ detalle.producto_nombre }}</strong>
+                                    <div class="text-xs text-muted">{{ detalle.unidad_medida }}</div>
+                                </td>
+                                <td class="text-center font-bold" style="font-size: 1.1em;">
+                                    {{ detalle.cantidad_recibida }}
+                                </td>
+                                <td>
+                                    <span class="badge" :class="detalle.estado_entrega.toLowerCase()">
+                                        {{ detalle.estado_entrega }}
+                                    </span>
+                                </td>
+                                <td class="text-muted text-sm">{{ detalle.observacion || '-' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <template #footer>
+                <button class="btn-secondary" @click="showConfirmModal = false" :disabled="saving">
+                    Seguir Editando
+                </button>
+                <button class="btn-primary" @click="executeSave" :disabled="saving">
+                    <Save class="icon" />
+                    {{ saving ? 'Guardando...' : 'Confirmar Recepción' }}
+                </button>
+            </template>
+        </FormModal>
 
         <!-- Success Modal -->
         <div v-if="showSuccessModal" class="modal-overlay">
@@ -799,6 +902,88 @@ const showSuccessModal = ref(false);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); /* Soft blue glow */
     background-color: #f8fafc;
 }
+
+/* Modal Summary Styles */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 1.5rem;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.summary-item label {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+}
+
+.summary-item span {
+    font-weight: 500;
+    color: var(--text);
+}
+
+.summary-table-container {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.summary-table th {
+    background-color: #f3f4f6;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.summary-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.alert-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    color: #9a3412;
+}
+
+.badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.badge.ok { background-color: #dcfce7; color: #166534; }
+.badge.parcial { background-color: #fef9c3; color: #854d0e; }
+.badge.muestra { background-color: #dbeafe; color: #1e40af; }
+.badge.dañado { background-color: #fee2e2; color: #991b1b; }
+.badge.rechazado { background-color: #fecaca; color: #7f1d1d; }
+
+.text-warning { color: #f59e0b; }
+.text-muted { color: #6b7280; }
+.text-xs { font-size: 0.75rem; }
+.text-sm { font-size: 0.875rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-4 { margin-top: 1rem; }
 
 /* Highlight focused element */
 .form-control:focus,
