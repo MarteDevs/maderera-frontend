@@ -5,11 +5,13 @@ import { useDespachosStore } from '../../stores/despachos.store';
 import { useMaestrosStore } from '../../stores/maestros.store';
 import { inventarioService } from '../../services/inventario.service';
 import { storeToRefs } from 'pinia';
+import { useToast } from '../../composables/useToast';
 import { ArrowLeft, Plus, Trash2, PackageCheck, AlertCircle, ChevronDown, Package } from 'lucide-vue-next';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 
 const route = useRoute();
 const router = useRouter();
+const { success, error: showError, warning } = useToast();
 const despachosStore = useDespachosStore();
 const maestrosStore = useMaestrosStore();
 
@@ -293,7 +295,7 @@ const validate = (): boolean => {
 
 const save = async () => {
     if (!validate()) {
-        alert('Por favor complete todos los campos requeridos y verifique el stock');
+        warning('Por favor complete todos los campos requeridos y verifique el stock');
         return;
     }
 
@@ -316,17 +318,20 @@ const save = async () => {
         if (isEditMode.value) {
             const id = Number(route.params.id);
             await despachosStore.updateDespacho(id, payload);
-            alert('Despacho actualizado exitosamente');
+            success('Despacho actualizado exitosamente');
         } else {
             await despachosStore.createDespacho(payload);
-            alert('Despacho creado exitosamente');
+            success('Despacho creado exitosamente');
         }
 
         router.push('/despachos');
-    } catch (error: any) {
-        console.error('Error al guardar:', error);
-        alert(error.response?.data?.message || 'Error al guardar el despacho');
+    } catch (e: any) {
+        console.error('Error saving despacho:', e);
+        showError(e.message || 'Error al guardar el despacho');
+    } finally {
+        loading.value = false;
     }
+
 };
 
 onMounted(async () => {
