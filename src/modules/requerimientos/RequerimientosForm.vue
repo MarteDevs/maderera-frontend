@@ -184,6 +184,12 @@ const totalEstimado = computed(() => {
     }, 0);
 });
 
+const totalEstimadoProveedor = computed(() => {
+    return formData.value.detalles.reduce((acc, d) => {
+        return acc + (Number(d.cantidad_solicitada || 0) * Number(d.precio_proveedor || 0));
+    }, 0);
+});
+
 const setDetailRef = (el: any, rowIndex: number, field: string) => {
     if (el) {
         if (!detailRefs.value.has(rowIndex)) {
@@ -613,8 +619,10 @@ onMounted(async () => {
                             <tr>
                                 <th>Producto</th>
                                 <th class="text-center">Cant.</th>
-                                <th class="text-right">Precio Mina</th>
-                                <th class="text-right">Subtotal</th>
+                                <th class="text-right">P. Prov.</th>
+                                <th class="text-right">Sub. Prov.</th>
+                                <th class="text-right">P. Mina</th>
+                                <th class="text-right">Sub. Mina</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -624,13 +632,17 @@ onMounted(async () => {
                                     <div v-if="detalle.observacion" class="text-xs text-muted">{{ detalle.observacion }}</div>
                                 </td>
                                 <td class="text-center">{{ detalle.cantidad_solicitada }}</td>
+                                <td class="text-right text-muted">S/. {{ Number(detalle.precio_proveedor).toFixed(2) }}</td>
+                                <td class="text-right text-muted">S/. {{ (Number(detalle.cantidad_solicitada) * Number(detalle.precio_proveedor)).toFixed(2) }}</td>
                                 <td class="text-right">S/. {{ Number(detalle.precio_mina).toFixed(2) }}</td>
                                 <td class="text-right font-medium">S/. {{ (Number(detalle.cantidad_solicitada) * Number(detalle.precio_mina)).toFixed(2) }}</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="3" class="text-right font-bold">Total Estimado (Ref.)</td>
+                                <td colspan="3" class="text-right font-bold">Totales Estimados</td>
+                                <td class="text-right font-bold text-muted">S/. {{ totalEstimadoProveedor.toFixed(2) }}</td>
+                                <td></td>
                                 <td class="text-right font-bold text-lg">S/. {{ totalEstimado.toFixed(2) }}</td>
                             </tr>
                         </tfoot>
@@ -657,13 +669,14 @@ onMounted(async () => {
 /* Modal Summary Styles */
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     background-color: #f9fafb;
     padding: 1rem;
     border-radius: var(--radius-md);
     margin-bottom: 1.5rem;
 }
+
 
 .summary-item {
     display: flex;
