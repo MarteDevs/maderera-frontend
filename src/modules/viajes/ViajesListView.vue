@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
@@ -9,6 +10,8 @@ import { saveAs } from 'file-saver';
 import type { Column } from '../../components/ui/DataTable.vue';
 
 import { useMaestrosStore } from '../../stores/maestros.store';
+
+const router = useRouter();
 
 // Store
 const store = useViajesStore();
@@ -37,6 +40,7 @@ const columns: Column[] = [
     { key: 'req_codigo', label: 'Requerimiento' }, 
     { key: 'prov_nombre', label: 'Proveedor' }, 
     { key: 'mina_nombre', label: 'Mina' },
+    { key: 'numero_vale', label: 'N° Vale/Guía' },
     { key: 'placa_vehiculo', label: 'Placa' },
     { key: 'conductor', label: 'Conductor' },
     { key: 'fecha_ingreso', label: 'Ingreso', sortable: true },
@@ -111,6 +115,7 @@ const handleExport = async () => {
             { header: 'REQUERIMIENTO', key: 'requerimiento', width: 15 },
             { header: 'PROVEEDOR', key: 'proveedor', width: 20 },
             { header: 'MINA', key: 'mina', width: 20 },
+            { header: 'N° VALE', key: 'numero_vale', width: 15 },
             { header: 'PLACA', key: 'placa', width: 15 },
             { header: 'CONDUCTOR', key: 'conductor', width: 20 },
             { header: 'FECHA INGRESO', key: 'fecha_ingreso', width: 18 },
@@ -145,6 +150,7 @@ const handleExport = async () => {
                 requerimiento: req?.codigo || '-',
                 proveedor: req?.proveedores?.nombre || req?.proveedor?.nombre || '-',
                 mina: req?.minas?.nombre || req?.mina?.nombre || '-',
+                numero_vale: viaje.numero_vale || '-',
                 placa: viaje.placa_vehiculo,
                 conductor: viaje.conductor,
                 fecha_ingreso: new Date(viaje.fecha_ingreso).toLocaleString(),
@@ -365,6 +371,10 @@ onMounted(() => {
                             <span class="card-value">{{ (viaje as any).mina_nombre || 'N/A' }}</span>
                         </div>
                         <div class="card-row">
+                            <span class="card-label">N° Vale:</span>
+                            <span class="card-value">{{ (viaje as any).numero_vale || '-' }}</span>
+                        </div>
+                        <div class="card-row">
                             <Calendar class="icon-xs" />
                             <span class="card-label">Vehículo:</span>
                             <span class="card-value">{{ viaje.placa_vehiculo }}</span>
@@ -457,7 +467,11 @@ onMounted(() => {
                 </template>
 
                 <template #toolbar-actions>
-                    <button class="btn btn-outline-success mr-2" @click="handleExport" :disabled="loading">
+                    <button class="btn-primary mr-2" @click="router.push('/viajes/new')">
+                        <Truck class="icon" />
+                        Registrar Viaje
+                    </button>
+                    <button class="btn btn-outline-success" @click="handleExport" :disabled="loading">
                         <Download class="icon" />
                         Exportar Excel
                     </button>
@@ -498,6 +512,10 @@ onMounted(() => {
                         <div class="info-item">
                             <label>Proveedor</label>
                             <span>{{ selectedViaje.requerimiento?.proveedor?.nombre }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>N° Vale</label>
+                            <span>{{ selectedViaje.numero_vale || '-' }}</span>
                         </div>
                         <div class="info-item">
                             <label>Vehículo</label>

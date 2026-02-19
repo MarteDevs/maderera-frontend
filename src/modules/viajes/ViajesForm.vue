@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { requerimientosService, type Requerimiento } from '../requerimientos/requerimientos.service';
 import { ArrowLeft, Save, Truck } from 'lucide-vue-next';
+import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -13,8 +14,11 @@ const store = useViajesStore();
 const requerimiento = ref<Requerimiento | null>(null);
 const loadingReq = ref(false);
 const saving = ref(false);
+const requerimientosOptions = ref<any[]>([]);
+const selectedReqId = ref<number | string>('');
 
 const formData = ref({
+    numero_vale: '',
     placa_vehiculo: '',
     conductor: '',
     observaciones: '',
@@ -22,13 +26,14 @@ const formData = ref({
     detalles: [] as any[]
 });
 
-const idRequerimiento = Number(route.params.id_requerimiento);
+const idRequerimientoParam = Number(route.params.id_requerimiento);
 
 // Refs for inputs
+const valeInput = ref<HTMLInputElement | null>(null);
 const placaInput = ref<HTMLInputElement | null>(null);
 const conductorInput = ref<HTMLInputElement | null>(null);
 const fechaInput = ref<HTMLInputElement | null>(null);
-const obsInput = ref<HTMLTextAreaElement | null>(null);
+const obsInput = ref<HTMLInputElement | null>(null);
 
 // Desktop Refs
 const recibidoInputsDesktop = ref<HTMLInputElement[]>([]);
@@ -58,6 +63,9 @@ const focusVisible = (index: number, desktopArr: HTMLElement[], mobileArr: HTMLE
 // Methods
 const handleEnter = (index: number, section: string) => {
     switch (section) {
+        case 'vale':
+            placaInput.value?.focus();
+            break;
         case 'placa':
             conductorInput.value?.focus();
             break;
@@ -68,8 +76,11 @@ const handleEnter = (index: number, section: string) => {
             obsInput.value?.focus();
             break;
         case 'obs':
-            if (recibidoInputsDesktop.value.length > 0 || recibidoInputsMobile.value.length > 0) {
+             if (recibidoInputsDesktop.value.length > 0 || recibidoInputsMobile.value.length > 0) {
                 focusVisible(0, recibidoInputsDesktop.value, recibidoInputsMobile.value);
+            } else {
+                 // Si no hay detalles (no req selected), tal vez ir al save o nada
+                 if (!requerimiento.value) alert('Seleccione un requerimiento primero');
             }
             break;
         case 'recibido':
@@ -96,11 +107,46 @@ const handleEnter = (index: number, section: string) => {
 
 
 // Methods
-const loadRequerimiento = async () => {
+const loadRequerimientosOptions = async () => {
+    try {
+        // Fetch PENDIENTE and PARCIAL requirements
+        // Assuming getAll supports status filtering. If not, we might need multiple calls or backend change.
+        // Based on analysis, getAll checks filters.estado.
+        // We can't filter multiple statuses easily with current backend implementation unless we change it.
+        // For now, let's fetch PENDIENTE. Users usually receive pending ones.
+        // TODO: Update backend to support 'active' or array of statuses if needed.
+        // Actually, let's try to fetch all non-completed/anulled. 
+        // Or just fetch all and filter in frontend for now if the list isn't huge, or make two calls.
+        const res = await requerimientosService.getAll({ limit: 100, estado: 'PENDIENTE' }); // Fetch pending
+        const res2 = await requerimientosService.getAll({ limit: 100, estado: 'PARCIAL' }); // Fetch partial
+        
+        const allReqs = [...res.data, ...res2.data];
+        
+        requerimientosOptions.value = allReqs.map(r => ({
+            id_requerimiento: r.id_requerimiento,
+            label: `${r.codigo} - ${r.proveedores?.nombre} - ${r.minas?.nombre}` 
+        }));
+
+    } catch (e) {
+        console.error('Error loading requerimientos options', e);
+    }
+};
+
+const handleReqChange = async () => {
+    if (!selectedReqId.value) {
+        requerimiento.value = null;
+        formData.value.detalles = [];
+        return;
+    }
+    await loadRequerimiento(Number(selectedReqId.value));
+};
+
+const loadRequerimiento = async (id: number) => {
     loadingReq.value = true;
     try {
-        const req = await requerimientosService.getById(idRequerimiento);
+        const req = await requerimientosService.getById(id);
         requerimiento.value = req;
+        selectedReqId.value = id;
         
         // Inicializar detalles del viaje basados en los items del requerimiento
         formData.value.detalles = req.detalles.map((d: any) => ({
@@ -113,21 +159,23 @@ const loadRequerimiento = async () => {
             cantidad_recibida: 0,
             estado_entrega: 'OK',
             observacion: ''
-        }));
+        })).filter((d: any) => d.cantidad_pendiente > 0); // Solo mostrar pendientes? usually yes
+        
     } catch (e) {
         console.error('Error cargando requerimiento', e);
         alert('No se pudo cargar el requerimiento');
-        router.back();
+        if (idRequerimientoParam) router.back();
     } finally {
         loadingReq.value = false;
         nextTick(() => {
-            placaInput.value?.focus();
+            valeInput.value?.focus();
         });
     }
 };
 
 const save = async () => {
     // Validaciones básicas
+    if (!selectedReqId.value) return alert('Seleccione un requerimiento');
     if (!formData.value.placa_vehiculo) return alert('Ingrese la placa del vehículo');
     if (!formData.value.conductor) return alert('Ingrese el nombre del conductor');
     
@@ -142,7 +190,8 @@ const save = async () => {
     saving.value = true;
     try {
         const payload = {
-            id_requerimiento: idRequerimiento,
+            id_requerimiento: Number(selectedReqId.value),
+            numero_vale: formData.value.numero_vale,
             placa_vehiculo: formData.value.placa_vehiculo,
             conductor: formData.value.conductor,
             fecha_ingreso: new Date(formData.value.fecha_ingreso).toISOString(),
@@ -174,13 +223,12 @@ const closeSuccessModal = () => {
     router.push('/viajes');
 };
 
-onMounted(() => {
-    if (!idRequerimiento) {
-        alert('ID de requerimiento no válido');
-        router.push('/requirements');
-        return;
+onMounted(async () => {
+    if (idRequerimientoParam) {
+        await loadRequerimiento(idRequerimientoParam);
+    } else {
+        await loadRequerimientosOptions();
     }
-    loadRequerimiento();
 });
 
 // Modal state
@@ -214,7 +262,24 @@ const showSuccessModal = ref(false);
             <!-- Datos del Transporte -->
             <div class="form-section">
                 <h3>Datos de Transporte</h3>
+                <div class="form-group full-width" style="margin-bottom: 1.5rem;">
+                     <label>Requerimiento</label>
+                     <SearchableSelect 
+                         v-model="selectedReqId"
+                         :options="requerimientosOptions"
+                         label-key="label"
+                         value-key="id_requerimiento"
+                         placeholder="Buscar requerimiento (Código, Proveedor, Mina)..."
+                         :disabled="!!route.params.id_requerimiento"
+                         @change="handleReqChange"
+                     />
+                </div>
+
                 <div class="grid-cols-3">
+                     <div class="form-group">
+                        <label>Nro. Vale / Guía</label>
+                        <input ref="valeInput" v-model="formData.numero_vale" type="text" class="form-control" placeholder="001-000123" @keydown.enter.prevent="handleEnter(0, 'vale')" />
+                    </div>
                     <div class="form-group">
                         <label>Placa Vehículo</label>
                         <input ref="placaInput" v-model="formData.placa_vehiculo" type="text" class="form-control" placeholder="ABC-123" @keydown.enter.prevent="handleEnter(0, 'placa')" />
@@ -223,14 +288,16 @@ const showSuccessModal = ref(false);
                         <label>Conductor</label>
                         <input ref="conductorInput" v-model="formData.conductor" type="text" class="form-control" placeholder="Nombre completo" @keydown.enter.prevent="handleEnter(0, 'conductor')" />
                     </div>
+                </div>
+                <div class="grid-cols-2" style="margin-top: 1rem;">
                     <div class="form-group">
                         <label>Fecha Llegada</label>
                         <input ref="fechaInput" v-model="formData.fecha_ingreso" type="datetime-local" class="form-control" @keydown.enter.prevent="handleEnter(0, 'fecha')" />
                     </div>
-                </div>
-                <div class="form-group full-width">
-                    <label>Observaciones del Viaje</label>
-                    <textarea ref="obsInput" v-model="formData.observaciones" class="form-control" rows="2" @keydown.enter.prevent="handleEnter(0, 'obs')"></textarea>
+                     <div class="form-group">
+                        <label>Observaciones del Viaje</label>
+                        <input ref="obsInput" v-model="formData.observaciones" class="form-control" placeholder="Opcional..." @keydown.enter.prevent="handleEnter(0, 'obs')" />
+                    </div>
                 </div>
             </div>
 

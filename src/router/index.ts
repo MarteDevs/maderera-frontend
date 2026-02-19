@@ -54,7 +54,7 @@ const routes = [
                 meta: { title: 'Viajes' }
             },
             {
-                path: 'viajes/new/:id_requerimiento',
+                path: 'viajes/new/:id_requerimiento?',
                 name: 'NuevoViaje',
                 component: () => import('../modules/viajes/ViajesForm.vue'),
                 meta: { title: 'Registrar Viaje' }
