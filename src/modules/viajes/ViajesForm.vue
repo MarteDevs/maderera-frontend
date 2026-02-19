@@ -19,12 +19,18 @@ const selectedReqId = ref<number | string>('');
 
 const formData = ref({
     numero_vale: '',
+    etiqueta_viaje: '',
     placa_vehiculo: '',
     conductor: '',
     observaciones: '',
     fecha_ingreso: new Date().toISOString().slice(0, 16),
     detalles: [] as any[]
 });
+
+const etiquetasViajeOptions = Array.from({ length: 15 }, (_, i) => ({
+    value: `${i + 1}-VIAJE`,
+    label: `${i + 1}-VIAJE`
+}));
 
 const idRequerimientoParam = Number(route.params.id_requerimiento);
 
@@ -192,6 +198,7 @@ const save = async () => {
         const payload = {
             id_requerimiento: Number(selectedReqId.value),
             numero_vale: formData.value.numero_vale,
+            etiqueta_viaje: formData.value.etiqueta_viaje,
             placa_vehiculo: formData.value.placa_vehiculo,
             conductor: formData.value.conductor,
             fecha_ingreso: new Date(formData.value.fecha_ingreso).toISOString(),
@@ -279,6 +286,18 @@ const showSuccessModal = ref(false);
                      <div class="form-group">
                         <label>Nro. Vale / Guía</label>
                         <input ref="valeInput" v-model="formData.numero_vale" type="text" class="form-control" placeholder="001-000123" @keydown.enter.prevent="handleEnter(0, 'vale')" />
+                    </div>
+                </div>
+
+                <div class="grid-cols-3">
+                     <div class="form-group">
+                        <label>Nro. Viaje (Manual)</label>
+                        <select v-model="formData.etiqueta_viaje" class="form-control">
+                            <option value="">-- Seleccione --</option>
+                            <option v-for="opt in etiquetasViajeOptions" :key="opt.value" :value="opt.value">
+                                {{ opt.label }}
+                            </option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Placa Vehículo</label>

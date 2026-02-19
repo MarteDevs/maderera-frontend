@@ -41,6 +41,7 @@ const columns: Column[] = [
     { key: 'prov_nombre', label: 'Proveedor' }, 
     { key: 'mina_nombre', label: 'Mina' },
     { key: 'numero_vale', label: 'N° Vale/Guía' },
+    { key: 'etiqueta_viaje', label: 'N° Viaje' },
     { key: 'placa_vehiculo', label: 'Placa' },
     { key: 'conductor', label: 'Conductor' },
     { key: 'fecha_ingreso', label: 'Ingreso', sortable: true },
@@ -116,6 +117,7 @@ const handleExport = async () => {
             { header: 'PROVEEDOR', key: 'proveedor', width: 20 },
             { header: 'MINA', key: 'mina', width: 20 },
             { header: 'N° VALE', key: 'numero_vale', width: 15 },
+            { header: 'N° VIAJE', key: 'etiqueta_viaje', width: 12 },
             { header: 'PLACA', key: 'placa', width: 15 },
             { header: 'CONDUCTOR', key: 'conductor', width: 20 },
             { header: 'FECHA INGRESO', key: 'fecha_ingreso', width: 18 },
@@ -151,6 +153,7 @@ const handleExport = async () => {
                 proveedor: req?.proveedores?.nombre || req?.proveedor?.nombre || '-',
                 mina: req?.minas?.nombre || req?.mina?.nombre || '-',
                 numero_vale: viaje.numero_vale || '-',
+                etiqueta_viaje: viaje.etiqueta_viaje || '-',
                 placa: viaje.placa_vehiculo,
                 conductor: viaje.conductor,
                 fecha_ingreso: new Date(viaje.fecha_ingreso).toLocaleString(),
@@ -516,6 +519,10 @@ onMounted(() => {
                         <div class="info-item">
                             <label>N° Vale</label>
                             <span>{{ selectedViaje.numero_vale || '-' }}</span>
+                        </div>
+                        <div class="info-item">
+                            <label>N° Viaje</label>
+                            <span>{{ selectedViaje.etiqueta_viaje || '-' }}</span>
                         </div>
                         <div class="info-item">
                             <label>Vehículo</label>
