@@ -269,8 +269,26 @@ const loadRequerimiento = async (id: number) => {
     }
 };
 
+const handleObsEnter = async (index: number) => {
+    // Si estamos en la última fila, agregamos una nueva
+    if (index === formData.value.detalles.length - 1) {
+        addDetalle();
+        // Esperar a que el DOM se actualice para enfocar la nueva fila
+        await nextTick();
+        focusProductSelect(index + 1);
+    } else {
+        // Si no es la última, mover el foco al siguiente producto
+        focusProductSelect(index + 1);
+    }
+};
+
 const save = async () => {
     saving.value = true;
+// ... (save function continues)
+
+// ... existing code ...
+
+// ... existing code ...
     try {
         // Validaciones básicas
         if (!formData.value.id_proveedor || !formData.value.id_mina) {
@@ -426,7 +444,7 @@ onMounted(async () => {
             <div class="form-section details-section">
                 <div class="section-header">
                     <h3>Productos</h3>
-                    <button class="btn-secondary btn-sm" @click="addDetalle">
+                    <button class="btn-success btn-sm" @click="addDetalle">
                         <Plus class="icon-sm" /> Agregar Item
                     </button>
                 </div>
@@ -504,7 +522,7 @@ onMounted(async () => {
                                         type="text" 
                                         v-model="detalle.observacion" 
                                         class="form-control dense" 
-                                        @keydown.enter.prevent
+                                        @keydown.enter.prevent="handleObsEnter(index)"
                                     />
                                 </td>
                                 <td>
@@ -531,6 +549,23 @@ onMounted(async () => {
 
 <style scoped>
 @import '../../assets/styles/responsive-forms.css';
+
+.btn-success {
+    background-color: #10b981; /* Emerald 500 */
+    color: white;
+    border: 1px solid #10b981;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.btn-success:hover {
+    background-color: #059669; /* Emerald 600 */
+}
 
 .requerimientos-form {
     max-width: 1000px;
