@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue';
 import { useRequerimientosStore } from '../../stores/requerimientos.store';
 import { storeToRefs } from 'pinia';
 import DataTable from '../../components/ui/DataTable.vue';
-import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2, Download, Eye } from 'lucide-vue-next';
+import { Plus, Truck, X, FileText, Calendar, Building2, MapPin, Filter, ChevronDown, Trash2, Download, Eye, Edit } from 'lucide-vue-next';
 import { useRouter } from 'vue-router';
 
 import type { Column } from '../../components/ui/DataTable.vue';
@@ -591,6 +591,14 @@ const styleRow = (row: ExcelJS.Row, estado: string) => {
 
                 <template #cell-actions="{ row }">
                     <div style="display: flex; gap: 8px; justify-content: center;">
+                        <button 
+                            class="btn-icon" 
+                            title="Editar" 
+                            @click="router.push(`/requirements/${row.id_requerimiento}`)"
+                            v-if="row.estado === 'PENDIENTE'"
+                        >
+                            <Edit class="icon-sm" />
+                        </button>
                         <button 
                             class="btn-icon" 
                             title="Registrar Ingreso (Viaje)" 

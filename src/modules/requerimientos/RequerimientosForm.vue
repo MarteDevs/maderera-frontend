@@ -239,6 +239,36 @@ const fixDateYear = (field: 'fecha_emision' | 'fecha_prometida') => {
     }
 };
 
+const loadRequerimiento = async (id: number) => {
+    try {
+        const req = await store.fetchRequerimientoById(id);
+        if (req) {
+            formData.value = {
+                fecha_emision: new Date(req.fecha_emision).toISOString().split('T')[0] as string,
+                fecha_prometida: req.fecha_prometida ? new Date(req.fecha_prometida).toISOString().split('T')[0] as string : '',
+                id_proveedor: req.id_proveedor.toString(),
+                id_mina: req.id_mina.toString(),
+                id_supervisor: req.id_supervisor.toString(),
+                observaciones: req.observaciones || '',
+                detalles: req.requerimiento_detalles?.map((d: any) => ({
+                    id_producto: d.id_producto,
+                    cantidad_solicitada: d.cantidad_solicitada,
+                    precio_proveedor: Number(d.precio_proveedor),
+                    precio_mina: Number(d.precio_mina),
+                    observacion: d.observacion || ''
+                })) || []
+            };
+            
+            // Trigger price loading for the selected provider
+            await handleProveedorChange();
+        }
+    } catch (e) {
+        console.error('Error loading requerimiento:', e);
+        alert('Error al cargar el requerimiento');
+        router.push('/requirements');
+    }
+};
+
 const save = async () => {
     saving.value = true;
     try {
@@ -268,7 +298,7 @@ const save = async () => {
         };
 
         if (isEditing.value) {
-            // await store.update(id, payload);
+            await store.updateRequerimiento(Number(route.params.id), payload);
         } else {
             await store.createRequerimiento(payload as any);
         }
@@ -281,13 +311,19 @@ const save = async () => {
     }
 };
 
-onMounted(() => {
+onMounted(async () => {
     // Cargar listas de maestros
-    cargarMaestros();
-    addDetalle(); // Agregar una línea vacía por defecto
-    // Focus first field
-    if (proveedorRef.value) {
-        proveedorRef.value.focus();
+    await cargarMaestros();
+    
+    // Check if editing
+    if (route.params.id) {
+        await loadRequerimiento(Number(route.params.id));
+    } else {
+        addDetalle(); // Agregar una línea vacía por defecto
+        // Focus first field
+        if (proveedorRef.value) {
+            proveedorRef.value.focus();
+        }
     }
 });
 </script>
