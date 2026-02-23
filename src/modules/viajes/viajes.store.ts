@@ -78,7 +78,7 @@ export const useViajesStore = defineStore('viajes', () => {
         }
     }
 
-    async function createViaje(data: Viaje) {
+    async function createViaje(data: any) {
         loading.value = true;
         error.value = null;
         try {

@@ -3,7 +3,8 @@ import { ref, onMounted, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { requerimientosService, type Requerimiento } from '../requerimientos/requerimientos.service';
-import { ArrowLeft, Save, Truck, AlertTriangle } from 'lucide-vue-next';
+import { productosService, medidasService } from '../../services/maestros.service';
+import { ArrowLeft, Save, Truck, AlertTriangle, Plus, Trash2 } from 'lucide-vue-next';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 import FormModal from '../../components/ui/FormModal.vue';
 
@@ -27,6 +28,26 @@ const formData = ref({
     fecha_ingreso: new Date().toISOString().slice(0, 16),
     detalles: [] as any[]
 });
+
+// Extra items (productos no solicitados en el requerimiento)
+const extraItems = ref<any[]>([]);
+const allProductos = ref<any[]>([]);
+const allMedidas = ref<any[]>([]);
+
+const addExtraItem = () => {
+    extraItems.value.push({
+        es_extra: true,
+        id_producto: '',
+        id_medida: '',
+        cantidad_recibida: 1,
+        estado_entrega: 'OK',
+        observacion: ''
+    });
+};
+
+const removeExtraItem = (index: number) => {
+    extraItems.value.splice(index, 1);
+};
 
 const etiquetasViajeOptions = Array.from({ length: 15 }, (_, i) => ({
     value: `${i + 1}-VIAJE`,
@@ -206,6 +227,9 @@ const executeSave = async () => {
         // Recalcular items recibidos por si cambiaron (aunque el modal bloquea edición, es seguro)
         const itemsRecibidos = formData.value.detalles.filter(d => d.cantidad_recibida > 0);
         
+        // Validate extra items
+        const extraValidados = extraItems.value.filter(e => e.id_producto && e.id_medida && e.cantidad_recibida > 0);
+
         const payload = {
             id_requerimiento: Number(selectedReqId.value),
             numero_vale: formData.value.numero_vale,
@@ -214,12 +238,23 @@ const executeSave = async () => {
             conductor: formData.value.conductor,
             fecha_ingreso: new Date(formData.value.fecha_ingreso).toISOString(),
             observaciones: formData.value.observaciones,
-            detalles: itemsRecibidos.map(d => ({
-                id_detalle_requerimiento: d.id_detalle_requerimiento,
-                cantidad_recibida: Number(d.cantidad_recibida),
-                estado_entrega: d.estado_entrega,
-                observacion: d.observacion
-            }))
+            detalles: [
+                ...itemsRecibidos.map(d => ({
+                    es_extra: false,
+                    id_detalle_requerimiento: d.id_detalle_requerimiento,
+                    cantidad_recibida: Number(d.cantidad_recibida),
+                    estado_entrega: d.estado_entrega,
+                    observacion: d.observacion
+                })),
+                ...extraValidados.map(e => ({
+                    es_extra: true,
+                    id_producto: Number(e.id_producto),
+                    id_medida: Number(e.id_medida),
+                    cantidad_recibida: Number(e.cantidad_recibida),
+                    estado_entrega: e.estado_entrega || 'OK',
+                    observacion: e.observacion
+                }))
+            ]
         };
 
         const success = await store.createViaje(payload);
@@ -242,6 +277,14 @@ const closeSuccessModal = () => {
 };
 
 onMounted(async () => {
+    // Load master data for extra items
+    const [prods, meds] = await Promise.all([
+        productosService.getAll({ limit: 500 }).catch(() => ({ data: [] })),
+        medidasService.getAll().catch(() => [])
+    ]);
+    allProductos.value = (prods as any).data || [];
+    allMedidas.value = Array.isArray(meds) ? meds : [];
+
     if (idRequerimientoParam) {
         await loadRequerimiento(idRequerimientoParam);
     } else {
@@ -486,6 +529,68 @@ const showConfirmModal = ref(false);
                 </div>
             </div>
 
+            <!-- Productos Extra (No solicitados en el Requerimiento) -->
+            <div class="form-section extra-items-section">
+                <div class="section-header-flex">
+                    <div>
+                        <h3>Productos Extra</h3>
+                        <p class="section-hint">Registra productos que llegaron pero NO estaban en el requerimiento original.</p>
+                    </div>
+                    <button type="button" class="btn-add-extra" @click="addExtraItem">
+                        <Plus class="icon-xs" /> Agregar Producto Extra
+                    </button>
+                </div>
+
+                <div v-if="extraItems.length === 0" class="empty-extra-hint">
+                    <span>Sin productos extra en este viaje.</span>
+                </div>
+
+                <div v-else class="extra-items-list">
+                    <div v-for="(item, index) in extraItems" :key="index" class="extra-item-row">
+                        <div class="extra-item-fields">
+                            <div class="form-group">
+                                <label>Producto *</label>
+                                <select v-model="item.id_producto" class="form-control">
+                                    <option value="">Seleccionar...</option>
+                                    <option v-for="p in allProductos" :key="p.id_producto" :value="p.id_producto">
+                                        {{ p.nombre }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Medida *</label>
+                                <select v-model="item.id_medida" class="form-control">
+                                    <option value="">Seleccionar...</option>
+                                    <option v-for="m in allMedidas" :key="m.id_medida" :value="m.id_medida">
+                                        {{ m.descripcion }}
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="form-group form-group-sm">
+                                <label>Cantidad *</label>
+                                <input v-model.number="item.cantidad_recibida" type="number" min="1" class="form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label>Estado</label>
+                                <select v-model="item.estado_entrega" class="form-control">
+                                    <option value="OK">✓ Conforme (OK)</option>
+                                    <option value="PARCIAL">⚠ Parcial</option>
+                                    <option value="MUESTRA">📦 Muestra</option>
+                                    <option value="RECHAZADO">✗ Rechazado</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Observación</label>
+                                <input v-model="item.observacion" type="text" class="form-control" placeholder="Opcional..." />
+                            </div>
+                        </div>
+                        <button type="button" class="btn-remove-extra" @click="removeExtraItem(index)" title="Eliminar">
+                            <Trash2 class="icon-xs" />
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="form-actions">
                 <button class="btn-secondary" @click="router.back()">Cancelar</button>
@@ -494,6 +599,7 @@ const showConfirmModal = ref(false);
                     {{ saving ? 'Guardando...' : 'Guardar Recepción' }}
                 </button>
             </div>
+
         </div>
 
         <!-- Confirmation Modal -->
@@ -1285,4 +1391,128 @@ const showConfirmModal = ref(false);
         font-size: 0.95rem;
     }
 }
+
+/* Extra Items Section */
+.extra-items-section {
+    border-top: 2px dashed var(--primary-muted, #c97d7d);
+    padding-top: 1.5rem;
+}
+
+.section-header-flex {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.section-header-flex h3 {
+    margin: 0;
+}
+
+.section-hint {
+    font-size: 0.85rem;
+    color: #888;
+    margin: 0.25rem 0 0;
+}
+
+.btn-add-extra {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    background: var(--primary, #8B1E1E);
+    color: white;
+    border: none;
+    border-radius: var(--radius, 6px);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.btn-add-extra:hover {
+    opacity: 0.85;
+}
+
+.extra-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.extra-item-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.75rem;
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: var(--radius, 6px);
+    padding: 1rem;
+}
+
+.extra-item-fields {
+    display: grid;
+    grid-template-columns: 2fr 1fr 80px 1fr 1.5fr;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.form-group-sm {
+    min-width: 70px;
+}
+
+.btn-remove-extra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: transparent;
+    border: 1px solid #e0e0e0;
+    border-radius: var(--radius, 6px);
+    cursor: pointer;
+    color: #d32f2f;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-remove-extra:hover {
+    background: #ffeaea;
+    border-color: #d32f2f;
+}
+
+.empty-extra-hint {
+    text-align: center;
+    color: #aaa;
+    font-size: 0.875rem;
+    padding: 1rem;
+    border: 1px dashed #ddd;
+    border-radius: var(--radius, 6px);
+}
+
+.icon-xs {
+    width: 14px;
+    height: 14px;
+}
+
+@media (max-width: 767px) {
+    .extra-item-fields {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .extra-item-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-remove-extra {
+        width: 100%;
+        height: 36px;
+    }
+}
 </style>
+

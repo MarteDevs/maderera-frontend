@@ -555,7 +555,10 @@ onMounted(() => {
                                             <div class="flex-center">
                                                 <Truck class="icon-xs text-gray" />
                                                 <div class="flex-col">
-                                                    <span>{{ item.producto_nombre }}</span>
+                                                    <span>
+                                                        {{ item.producto_nombre }}
+                                                        <span v-if="item.es_extra" class="badge-extra">EXTRA</span>
+                                                    </span>
                                                     <span class="text-xs text-gray" v-if="item.unidad_medida">
                                                         ({{ item.unidad_medida }})
                                                     </span>
@@ -688,6 +691,19 @@ onMounted(() => {
 
 .btn-icon:hover {
     text-decoration: underline;
+}
+
+.badge-extra {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #f57c00;
+    color: white;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    margin-left: 4px;
 }
 
 /* Modal Styles */

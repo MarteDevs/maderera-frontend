@@ -2,7 +2,10 @@ import api from '../../services/api';
 
 export interface ViajeDetalle {
     id_viaje_detalle?: number;
-    id_detalle_requerimiento: number;
+    id_detalle_requerimiento?: number | null;
+    es_extra?: boolean;
+    id_producto?: number | null;
+    id_medida?: number | null;
     cantidad_recibida: number;
     estado_entrega: 'OK' | 'RECHAZADO' | 'PARCIAL' | 'MUESTRA' | 'DA_ADO';
     observacion?: string;
@@ -69,10 +72,21 @@ function mapViajeFromBackend(v: any): any {
             proveedor: v.requerimientos.proveedores
         } : undefined,
         // Mapear detalles para incluir nombre de producto
-        detalles: v.viaje_detalles?.map((d: any) => ({
-            ...d,
-            producto_nombre: d.requerimiento_detalles?.productos?.nombre || `Producto #${d.id_detalle_requerimiento}`,
-            unidad_medida: d.requerimiento_detalles?.productos?.medidas?.descripcion || d.requerimiento_detalles?.productos?.medida?.descripcion || 'UNIDAD'
-        })) || []
+        detalles: v.viaje_detalles?.map((d: any) => {
+            const esExtra = d.es_extra === true;
+            const producto_nombre = esExtra
+                ? (d.productos?.nombre || 'Producto Extra')
+                : (d.requerimiento_detalles?.productos?.nombre || `Detalle #${d.id_detalle_requerimiento}`);
+            const unidad_medida = esExtra
+                ? (d.medidas?.descripcion || '---')
+                : (d.requerimiento_detalles?.productos?.medidas?.descripcion ||
+                    d.requerimiento_detalles?.productos?.medida?.descripcion || 'UNIDAD');
+            return {
+                ...d,
+                es_extra: esExtra,
+                producto_nombre,
+                unidad_medida
+            };
+        }) || []
     };
 }
