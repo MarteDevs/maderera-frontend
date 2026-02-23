@@ -47,10 +47,8 @@ const removeExtraItem = (index: number) => {
     extraItems.value.splice(index, 1);
 };
 
-const etiquetasViajeOptions = Array.from({ length: 15 }, (_, i) => ({
-    value: `${i + 1}-VIAJE`,
-    label: `${i + 1}-VIAJE`
-}));
+const etiquetasViajeOptions = Array.from({ length: 20 }, (_, i) => `${i + 1}-VIAJE`);
+
 
 const idRequerimientoParam = Number(route.params.id_requerimiento);
 
@@ -348,12 +346,19 @@ const showConfirmModal = ref(false);
                     </div>
                     <div class="form-group">
                         <label class="field-label">🚛 Nro. Viaje</label>
-                        <select ref="etiquetaInput" v-model="formData.etiqueta_viaje" class="form-control form-control-enhanced" @keydown.enter.prevent="handleEnter(0, 'etiqueta')">
-                            <option value="">-- Seleccione --</option>
-                            <option v-for="opt in etiquetasViajeOptions" :key="opt.value" :value="opt.value">
-                                {{ opt.label }}
-                            </option>
-                        </select>
+                        <input
+                            ref="etiquetaInput"
+                            v-model="formData.etiqueta_viaje"
+                            type="text"
+                            list="viaje-options"
+                            class="form-control form-control-enhanced"
+                            placeholder="Ej: 4-VIAJE o escribe..."
+                            autocomplete="off"
+                            @keydown.enter.prevent="handleEnter(0, 'etiqueta')"
+                        />
+                        <datalist id="viaje-options">
+                            <option v-for="v in etiquetasViajeOptions" :key="v" :value="v" />
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label class="field-label">📅 Fecha de Llegada</label>
