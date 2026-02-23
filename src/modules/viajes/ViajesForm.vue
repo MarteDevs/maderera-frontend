@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useViajesStore } from './viajes.store';
 import { requerimientosService, type Requerimiento } from '../requerimientos/requerimientos.service';
 import { productosService, medidasService } from '../../services/maestros.service';
-import { ArrowLeft, Save, Truck, AlertTriangle, Plus, Trash2 } from 'lucide-vue-next';
+import { ArrowLeft, Save, Truck, AlertTriangle, Plus, Trash2, Package } from 'lucide-vue-next';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 import FormModal from '../../components/ui/FormModal.vue';
 
@@ -290,20 +290,24 @@ const showConfirmModal = ref(false);
 
 <template>
     <div class="viajes-form-view">
-        <header class="page-header">
-            <div class="header-content">
-                <div class="title-group">
-                    <button class="btn-back" @click="router.back()">
-                        <ArrowLeft class="icon" />
-                    </button>
-                    <div>
-                        <h1 class="page-title">Registrar Recepción (Viaje)</h1>
-                        <p class="page-subtitle" v-if="requerimiento">
-                            Requerimiento #{{ requerimiento.codigo }} - {{ requerimiento.proveedor?.nombre }}
-                        </p>
-                    </div>
+        <!-- Hero Header Banner -->
+        <header class="viajes-hero-header">
+            <div class="hero-left">
+                <button class="btn-back-hero" @click="router.back()">
+                    <ArrowLeft class="icon" />
+                </button>
+                <div class="hero-text">
+                    <div class="hero-badge"><Truck class="icon-xs" /> Recepción de Material</div>
+                    <h1 class="hero-title">Registrar Viaje</h1>
+                    <p class="hero-subtitle" v-if="requerimiento">
+                        📋 {{ requerimiento.codigo }}
+                        <span class="hero-sep">·</span>
+                        🏭 {{ requerimiento.proveedor?.nombre }}
+                        <span class="hero-sep" v-if="requerimiento.mina">·</span>
+                        <span v-if="requerimiento.mina">⛏ {{ requerimiento.mina?.nombre }}</span>
+                    </p>
+                    <p class="hero-subtitle-placeholder" v-else>Seleccione un requerimiento para continuar</p>
                 </div>
-
             </div>
         </header>
 
@@ -313,10 +317,19 @@ const showConfirmModal = ref(false);
 
         <div v-else class="form-container">
             <!-- Datos del Transporte -->
-            <div class="form-section">
-                <h3>Datos de Transporte</h3>
+            <div class="form-section section-transport">
+                <div class="section-icon-header">
+                    <div class="section-icon-wrap transport-icon">
+                        <Truck class="icon-md" />
+                    </div>
+                    <div>
+                        <h3>Datos de Transporte</h3>
+                        <p class="section-desc">Información del requerimiento y número de guía</p>
+                    </div>
+                </div>
+
                 <div class="form-group full-width" style="margin-bottom: 1.5rem;">
-                     <label>Requerimiento</label>
+                     <label class="field-label">📦 Requerimiento</label>
                      <SearchableSelect 
                          v-model="selectedReqId"
                          :options="requerimientosOptions"
@@ -328,39 +341,52 @@ const showConfirmModal = ref(false);
                      />
                 </div>
 
-                <div class="grid-cols-3">
-                     <div class="form-group">
-                        <label>Nro. Vale / Guía</label>
-                        <input ref="valeInput" v-model="formData.numero_vale" type="text" class="form-control" placeholder="001-000123" @keydown.enter.prevent="handleEnter(0, 'vale')" />
+                <div class="transport-fields-grid">
+                    <div class="form-group">
+                        <label class="field-label">🗒 Nro. Vale / Guía</label>
+                        <input ref="valeInput" v-model="formData.numero_vale" type="text" class="form-control form-control-enhanced" placeholder="001-000123" @keydown.enter.prevent="handleEnter(0, 'vale')" />
                     </div>
-                </div>
-
-                <div class="grid-cols-2">
-                     <div class="form-group">
-                        <label>Nro. Viaje (Manual)</label>
-                        <select ref="etiquetaInput" v-model="formData.etiqueta_viaje" class="form-control" @keydown.enter.prevent="handleEnter(0, 'etiqueta')">
+                    <div class="form-group">
+                        <label class="field-label">🚛 Nro. Viaje</label>
+                        <select ref="etiquetaInput" v-model="formData.etiqueta_viaje" class="form-control form-control-enhanced" @keydown.enter.prevent="handleEnter(0, 'etiqueta')">
                             <option value="">-- Seleccione --</option>
                             <option v-for="opt in etiquetasViajeOptions" :key="opt.value" :value="opt.value">
                                 {{ opt.label }}
                             </option>
                         </select>
                     </div>
-                </div>
-                <div class="grid-cols-2" style="margin-top: 1rem;">
                     <div class="form-group">
-                        <label>Fecha Llegada</label>
-                        <input ref="fechaInput" v-model="formData.fecha_ingreso" type="datetime-local" class="form-control" @keydown.enter.prevent="handleEnter(0, 'fecha')" />
+                        <label class="field-label">📅 Fecha de Llegada</label>
+                        <input ref="fechaInput" v-model="formData.fecha_ingreso" type="datetime-local" class="form-control form-control-enhanced" @keydown.enter.prevent="handleEnter(0, 'fecha')" />
                     </div>
-                     <div class="form-group">
-                        <label>Observaciones del Viaje</label>
-                        <input ref="obsInput" v-model="formData.observaciones" class="form-control" placeholder="Opcional..." @keydown.enter.prevent="handleEnter(0, 'obs')" />
+                    <div class="form-group">
+                        <label class="field-label">💬 Observaciones</label>
+                        <input ref="obsInput" v-model="formData.observaciones" class="form-control form-control-enhanced" placeholder="Opcional..." @keydown.enter.prevent="handleEnter(0, 'obs')" />
                     </div>
                 </div>
             </div>
 
             <!-- Detalles de Recepción -->
-            <div class="form-section">
-                <h3>Detalle de Carga</h3>
+            <div class="form-section section-carga">
+                <div class="section-icon-header">
+                    <div class="section-icon-wrap carga-icon">
+                        <Package class="icon-md" />
+                    </div>
+                    <div>
+                        <h3>Detalle de Carga</h3>
+                        <p class="section-desc">Registra las cantidades recibidas por producto</p>
+                    </div>
+                    <div class="carga-stats" v-if="formData.detalles.length > 0">
+                        <div class="stat-chip stat-total">
+                            <span class="stat-num">{{ formData.detalles.length }}</span>
+                            <span class="stat-lbl">Items</span>
+                        </div>
+                        <div class="stat-chip stat-recibidos">
+                            <span class="stat-num">{{ formData.detalles.filter(d => d.cantidad_recibida > 0).length }}</span>
+                            <span class="stat-lbl">Con cantidad</span>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Desktop: Table -->
                 <div class="table-responsive desktop-only">
@@ -694,146 +720,297 @@ const showConfirmModal = ref(false);
 <style scoped>
 @import '../../assets/styles/responsive-forms.css';
 
+/* ── Base ────────────────────────────────── */
 .viajes-form-view {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
+    padding-bottom: 3rem;
 }
 
-.page-header {
-    margin-bottom: 2rem;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.title-group {
+/* ── Hero Header ─────────────────────────── */
+.viajes-hero-header {
+    background: linear-gradient(135deg, #1e40af 0%, #4f46e5 60%, #7c3aed 100%);
+    border-radius: 1rem;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.75rem;
     display: flex;
     align-items: center;
     gap: 1rem;
+    box-shadow: 0 8px 30px rgba(79, 70, 229, 0.35);
+    position: relative;
+    overflow: hidden;
+}
+.viajes-hero-header::after {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.07);
+    pointer-events: none;
 }
 
-.page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text);
-    margin: 0;
-}
-
-.page-subtitle {
-    color: var(--text-light);
-    margin: 0;
-    font-size: 0.9rem;
-}
-
-.btn-back {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text);
+.hero-left {
     display: flex;
     align-items: center;
-    padding: 0.5rem;
+    gap: 1.25rem;
+    flex: 1;
+}
+
+.btn-back-hero {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
     border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-.btn-back:hover {
-    background-color: var(--bg-light);
-}
-
-.actions {
+    width: 40px;
+    height: 40px;
     display: flex;
-    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.btn-back-hero:hover {
+    background: rgba(255,255,255,0.28);
 }
 
+.hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.9);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    margin-bottom: 0.4rem;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.hero-title {
+    color: white;
+    font-size: 1.75rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem 0;
+    line-height: 1.2;
+}
+.hero-subtitle {
+    color: rgba(255,255,255,0.82);
+    margin: 0;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+.hero-sep { opacity: 0.5; }
+.hero-subtitle-placeholder {
+    color: rgba(255,255,255,0.55);
+    margin: 0;
+    font-size: 0.88rem;
+    font-style: italic;
+}
+
+/* ── Form Container ──────────────────────── */
 .form-container {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
+/* ── Section Cards ───────────────────────── */
 .form-section {
     background: white;
-    padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border);
+    padding: 1.75rem;
+    border-radius: 0.875rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border: 1px solid #e5e7eb;
+    transition: box-shadow 0.2s;
+}
+.form-section:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-.form-section h3 {
-    margin-top: 0;
-    margin-bottom: 1.25rem;
+/* Section Icon Headers */
+.section-icon-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #f3f4f6;
+}
+.section-icon-wrap {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+}
+.transport-icon {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+.carga-icon {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 4px 12px rgba(5, 150, 105, 0.35);
+}
+.extra-section-icon {
+    background: linear-gradient(135deg, #f57c00, #ef6c00);
+    box-shadow: 0 4px 12px rgba(245, 124, 0, 0.35);
+}
+
+.section-icon-header h3 {
+    margin: 0 0 0.2rem 0;
     font-size: 1.1rem;
-    color: var(--text);
-    border-bottom: 1px solid var(--border-light);
-    padding-bottom: 0.75rem;
+    font-weight: 700;
+    color: #111827;
+}
+.section-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #6b7280;
 }
 
-.grid-cols-3 {
+/* Stats chips for Carga section */
+.carga-stats {
+    display: flex;
+    gap: 0.6rem;
+    margin-left: auto;
+    align-items: center;
+}
+.stat-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    min-width: 58px;
+}
+.stat-total {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+.stat-recibidos {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+.stat-num {
+    font-weight: 800;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: #1e40af;
+}
+.stat-recibidos .stat-num { color: #065f46; }
+.stat-lbl {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+/* ── Transport Fields Grid ───────────────── */
+.transport-fields-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-bottom: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
 }
 
+/* ── Form Group & Label ──────────────────── */
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.4rem;
+}
+.field-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
 }
 
-.form-group label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text);
-}
-
+/* ── Form Controls ───────────────────────── */
 .form-control {
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border: 1.5px solid #d1d5db;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    background: #fafafa;
+    width: 100%;
+    box-sizing: border-box;
 }
-
-.form-control:focus {
+.form-control-enhanced {
+    padding: 0.6rem 0.875rem;
+    border: 1.5px solid #c7d2fe;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-control:focus,
+.form-control-enhanced:focus,
+.form-control-mobile:focus {
     outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px var(--primary-light);
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: white;
 }
-
 .form-control.dense {
     padding: 0.375rem 0.5rem;
+    font-size: 0.82rem;
 }
 
-.full-width {
-    grid-column: 1 / -1;
-}
-
-.table-responsive {
-    overflow-x: auto;
-}
-
+/* ── Table ───────────────────────────────── */
+.table-responsive { overflow-x: auto; border-radius: 0.625rem; }
 .details-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
 }
-
-.details-table th,
-.details-table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-light);
-    text-align: left;
-}
-
 .details-table th {
-    font-weight: 600;
-    color: var(--text-light);
-    background-color: var(--bg-light);
+    background: linear-gradient(90deg, #1e40af, #4f46e5);
+    color: white;
+    font-weight: 700;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.85rem 0.875rem;
+    text-align: left;
+    border-bottom: none;
+}
+.details-table th:first-child { border-radius: 0.625rem 0 0 0; }
+.details-table th:last-child  { border-radius: 0 0.625rem 0 0; }
+.details-table td {
+    padding: 0.7rem 0.875rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+.details-table tbody tr:hover td {
+    background-color: #f8faff;
+}
+.row-completed td {
+    background-color: #fef2f2;
+    color: #9f1239;
+}
+.row-completed .text-gray { color: #be123c; }
+.row-completed input,
+.row-completed select {
+    background: rgba(255,255,255,0.6);
+    border-color: #fca5a5;
+    color: #9f1239;
 }
 
 .product-info {
@@ -841,274 +1018,202 @@ const showConfirmModal = ref(false);
     align-items: center;
     gap: 0.5rem;
 }
+.flex-col { display: flex; flex-direction: column; }
 
+/* ── Utility ─────────────────────────────── */
 .text-center { text-align: center; }
-.font-bold { font-weight: 600; }
-.text-gray { color: var(--text-light); }
-.bg-blue-50 {
-    background-color: #eff6ff !important;
-    color: var(--plugin-text);
-}
-.bg-green-50 {
-    background-color: #f0fdf4 !important;
-    cursor: not-allowed;
-    color: #166534 !important;
-}
+.text-right  { text-align: right; }
+.font-bold   { font-weight: 600; }
+.text-gray   { color: #9ca3af; }
+.text-xs     { font-size: 0.75rem; }
+.text-sm     { font-size: 0.875rem; }
+.text-warning { color: #f59e0b; }
+.text-muted  { color: #6b7280; }
+.text-success { color: #059669; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mt-4 { margin-top: 1rem; }
+.full-width { grid-column: 1 / -1; }
 
+.bg-blue-50 { background: #eff6ff !important; color: #1e40af; }
+.bg-green-50 { background: #ecfdf5 !important; cursor: not-allowed; color: #065f46 !important; }
+
+/* ── Buttons ─────────────────────────────── */
 .btn-primary, .btn-secondary {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    border-radius: var(--radius-md);
-    font-weight: 500;
+    padding: 0.7rem 1.5rem;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    font-size: 0.9rem;
     border: none;
     cursor: pointer;
     transition: all 0.2s;
 }
-
 .btn-primary {
-    background-color: var(--primary);
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
     color: white;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
 }
-
-.btn-primary:hover {
-    background-color: var(--primary-dark);
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #4338ca, #4f46e5);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+    transform: translateY(-1px);
 }
-
+.btn-primary:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+}
 .btn-secondary {
-    background-color: white;
-    color: var(--text);
-    border: 1px solid var(--border);
+    background: white;
+    color: #374151;
+    border: 1.5px solid #d1d5db;
 }
-
 .btn-secondary:hover {
-    background-color: var(--bg-light);
+    background: #f9fafb;
+    border-color: #9ca3af;
 }
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+}
+.full-width-btn { width: 100%; justify-content: center; }
 
-.icon { width: 1.25rem; height: 1.25rem; }
+/* ── Icons ───────────────────────────────── */
+.icon    { width: 1.25rem; height: 1.25rem; }
+.icon-xs { width: 0.875rem; height: 0.875rem; }
 .icon-sm { width: 1rem; height: 1rem; }
+.icon-md { width: 1.35rem; height: 1.35rem; }
 .icon-lg { width: 3rem; height: 3rem; }
 
+/* ── Loading ─────────────────────────────── */
 .loading-state {
     text-align: center;
-    padding: 3rem;
-    color: var(--text-light);
+    padding: 4rem;
+    color: #9ca3af;
+    font-size: 0.95rem;
 }
 
-.flex-col {
-    display: flex;
-    flex-direction: column;
+/* ── Badges ──────────────────────────────── */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.badge.ok       { background: #dcfce7; color: #166534; }
+.badge.parcial  { background: #fef9c3; color: #854d0e; }
+.badge.muestra  { background: #dbeafe; color: #1e40af; }
+.badge.dañado   { background: #fee2e2; color: #991b1b; }
+.badge.rechazado{ background: #fecaca; color: #7f1d1d; }
+
+.badge-extra {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #f57c00;
+    color: white;
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+    margin-left: 4px;
 }
 
-/* Modal Styles */
+/* ── Modal ───────────────────────────────── */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    background: rgba(0,0,0,0.45);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(3px);
 }
-
 .success-modal {
     background: white;
-    padding: 2rem;
-    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    border-radius: 1rem;
     text-align: center;
-    max-width: 400px;
+    max-width: 420px;
     width: 90%;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
-
 .success-icon-wrapper {
     margin-bottom: 1rem;
     display: inline-flex;
     padding: 1rem;
     border-radius: 50%;
-    background-color: #dcfce7;
+    background: #dcfce7;
 }
+.success-modal h3 { margin: 0 0 0.5rem; font-size: 1.3rem; color: #111827; }
+.success-modal p  { color: #6b7280; margin: 0 0 1.5rem; }
 
-.text-success { color: #166534; }
-
-.success-modal h3 {
-    margin: 0 0 0.5rem 0;
-    color: var(--text);
-    font-size: 1.25rem;
-}
-
-.success-modal p {
-    color: var(--text-light);
-    margin: 0 0 1.5rem 0;
-}
-
-.full-width-btn {
-    width: 100%;
-    justify-content: center;
-}
-
-/* New Styles */
-.row-completed td {
-    background-color: #fee2e2; /* Reddish tone for completed items */
-    color: #7f1d1d;
-}
-
-.row-completed .text-gray {
-    color: #991b1b;
-}
-
-.row-completed input,
-.row-completed select {
-    background-color: rgba(255, 255, 255, 0.5);
-    border-color: #fca5a5;
-    color: #7f1d1d;
-}
-
-/* Enhanced Table Header */
-.details-table th {
-    background-color: var(--primary);
-    color: white;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    border-bottom: none;
-}
-
-/* Focus properties */
-.form-control:focus,
-.form-control-mobile:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); /* Soft blue glow */
-    background-color: #f8fafc;
-}
-
-/* Modal Summary Styles */
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    background-color: #f9fafb;
-    padding: 1rem;
-    border-radius: var(--radius-md);
-    margin-bottom: 1.5rem;
-}
-
-.summary-item {
-    display: flex;
-    flex-direction: column;
-}
-
-.summary-item.full-width {
-    grid-column: 1 / -1;
-}
-
-.summary-item label {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    font-weight: 600;
-    text-transform: uppercase;
-    margin-bottom: 0.25rem;
-}
-
-.summary-item span {
-    font-weight: 500;
-    color: var(--text);
-}
-
-.summary-table-container {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    overflow: hidden;
-}
-
-.summary-table th {
-    background-color: #f3f4f6;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    color: var(--text);
-}
-
-.summary-table td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #f3f4f6;
-}
-
+/* ── Alert Box ───────────────────────────── */
 .alert-box {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background-color: #fff7ed;
+    background: #fff7ed;
     border: 1px solid #fed7aa;
-    padding: 0.75rem;
-    border-radius: var(--radius-md);
+    padding: 0.875rem;
+    border-radius: 0.625rem;
     color: #9a3412;
 }
 
-.badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 600;
+/* ── Summary (Confirm Modal) ─────────────── */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    background: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.625rem;
+    margin-bottom: 1.5rem;
 }
-.badge.ok { background-color: #dcfce7; color: #166534; }
-.badge.parcial { background-color: #fef9c3; color: #854d0e; }
-.badge.muestra { background-color: #dbeafe; color: #1e40af; }
-.badge.dañado { background-color: #fee2e2; color: #991b1b; }
-.badge.rechazado { background-color: #fecaca; color: #7f1d1d; }
-
-.text-warning { color: #f59e0b; }
-.text-muted { color: #6b7280; }
-.text-xs { font-size: 0.75rem; }
-.text-sm { font-size: 0.875rem; }
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mt-4 { margin-top: 1rem; }
-
-/* Highlight focused element */
-.form-control:focus,
-.form-control-mobile:focus {
-    border-color: #2563eb;
-    background-color: #eff6ff;
+.summary-item { display: flex; flex-direction: column; }
+.summary-item.full-width { grid-column: 1 / -1; }
+.summary-item label {
+    font-size: 0.72rem;
+    color: #9ca3af;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.2rem;
 }
+.summary-item span { font-weight: 600; color: #111827; }
+.summary-table-container { border: 1px solid #e5e7eb; border-radius: 0.625rem; overflow: hidden; }
+.summary-table th { background: #f3f4f6; font-size: 0.78rem; text-transform: uppercase; }
+.summary-table td { padding: 0.7rem; border-bottom: 1px solid #f3f4f6; }
 
 /* ============================================
    MOBILE RESPONSIVE
    ============================================ */
+
+@media (max-width: 900px) {
+    .transport-fields-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .carga-stats { display: none; }
+}
 
 @media (max-width: 767px) {
     .viajes-form-view {
         padding: 0;
     }
 
-    .page-header {
-        padding: 1rem;
+    .viajes-hero-header {
+        border-radius: 0;
+        padding: 1.25rem 1rem;
         margin-bottom: 1rem;
     }
-
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .title-group {
-        width: 100%;
-    }
-
-    .title-group h1 {
-        font-size: 1.5rem;
-    }
-
-    .req-info {
-        font-size: 0.85rem;
-    }
+    .hero-title { font-size: 1.3rem; }
 
     .form-container {
         padding: 0;
@@ -1120,8 +1225,13 @@ const showConfirmModal = ref(false);
         padding: 1rem;
     }
 
-    .form-section h3 {
-        font-size: 1.1rem;
+    .section-icon-header {
+        flex-wrap: wrap;
+    }
+
+    .transport-fields-grid {
+        grid-template-columns: 1fr;
+        gap: 0.875rem;
     }
 
     /* Grid to single column on mobile */
