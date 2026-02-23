@@ -22,8 +22,6 @@ const selectedReqId = ref<number | string>('');
 const formData = ref({
     numero_vale: '',
     etiqueta_viaje: '',
-    placa_vehiculo: '',
-    conductor: '',
     observaciones: '',
     fecha_ingreso: new Date().toISOString().slice(0, 16),
     detalles: [] as any[]
@@ -58,8 +56,6 @@ const idRequerimientoParam = Number(route.params.id_requerimiento);
 
 // Refs for inputs
 const valeInput = ref<HTMLInputElement | null>(null);
-const placaInput = ref<HTMLInputElement | null>(null);
-const conductorInput = ref<HTMLInputElement | null>(null);
 const fechaInput = ref<HTMLInputElement | null>(null);
 const obsInput = ref<HTMLInputElement | null>(null);
 
@@ -92,12 +88,6 @@ const focusVisible = (index: number, desktopArr: HTMLElement[], mobileArr: HTMLE
 const handleEnter = (index: number, section: string) => {
     switch (section) {
         case 'vale':
-            placaInput.value?.focus();
-            break;
-        case 'placa':
-            conductorInput.value?.focus();
-            break;
-        case 'conductor':
             fechaInput.value?.focus();
             break;
         case 'fecha':
@@ -204,9 +194,8 @@ const loadRequerimiento = async (id: number) => {
 const save = async () => {
     // Validaciones básicas
     if (!selectedReqId.value) return alert('Seleccione un requerimiento');
-    if (!formData.value.placa_vehiculo) return alert('Ingrese la placa del vehículo');
-    if (!formData.value.conductor) return alert('Ingrese el nombre del conductor');
     
+
     // Validar que al menos un item tenga cantidad > 0
     const itemsRecibidos = formData.value.detalles.filter(d => d.cantidad_recibida > 0);
     if (itemsRecibidos.length === 0) return alert('Debe registrar la recepción de al menos un item');
@@ -234,8 +223,6 @@ const executeSave = async () => {
             id_requerimiento: Number(selectedReqId.value),
             numero_vale: formData.value.numero_vale,
             etiqueta_viaje: formData.value.etiqueta_viaje,
-            placa_vehiculo: formData.value.placa_vehiculo,
-            conductor: formData.value.conductor,
             fecha_ingreso: new Date(formData.value.fecha_ingreso).toISOString(),
             observaciones: formData.value.observaciones,
             detalles: [
@@ -344,7 +331,7 @@ const showConfirmModal = ref(false);
                     </div>
                 </div>
 
-                <div class="grid-cols-3">
+                <div class="grid-cols-2">
                      <div class="form-group">
                         <label>Nro. Viaje (Manual)</label>
                         <select v-model="formData.etiqueta_viaje" class="form-control">
@@ -353,14 +340,6 @@ const showConfirmModal = ref(false);
                                 {{ opt.label }}
                             </option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Placa Vehículo</label>
-                        <input ref="placaInput" v-model="formData.placa_vehiculo" type="text" class="form-control" placeholder="ABC-123" @keydown.enter.prevent="handleEnter(0, 'placa')" />
-                    </div>
-                    <div class="form-group">
-                        <label>Conductor</label>
-                        <input ref="conductorInput" v-model="formData.conductor" type="text" class="form-control" placeholder="Nombre completo" @keydown.enter.prevent="handleEnter(0, 'conductor')" />
                     </div>
                 </div>
                 <div class="grid-cols-2" style="margin-top: 1rem;">
@@ -636,10 +615,7 @@ const showConfirmModal = ref(false);
                         <label>N° Viaje (Manual):</label>
                         <span>{{ formData.etiqueta_viaje || '-' }}</span>
                     </div>
-                    <div class="summary-item">
-                        <label>Vehículo/Conductor:</label>
-                        <span>{{ formData.placa_vehiculo }} / {{ formData.conductor }}</span>
-                    </div>
+
                     <div class="summary-item full-width">
                         <label>Fecha Recepción:</label>
                         <span>{{ new Date(formData.fecha_ingreso).toLocaleString() }}</span>

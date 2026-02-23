@@ -525,14 +525,6 @@ onMounted(() => {
                             <span>{{ selectedViaje.etiqueta_viaje || '-' }}</span>
                         </div>
                         <div class="info-item">
-                            <label>Vehículo</label>
-                            <span>{{ selectedViaje.placa_vehiculo }}</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Conductor</label>
-                            <span>{{ selectedViaje.conductor }}</span>
-                        </div>
-                        <div class="info-item">
                             <label>Fecha Ingreso</label>
                             <span>{{ new Date(selectedViaje.fecha_ingreso).toLocaleString() }}</span>
                         </div>
