@@ -56,6 +56,7 @@ const idRequerimientoParam = Number(route.params.id_requerimiento);
 
 // Refs for inputs
 const valeInput = ref<HTMLInputElement | null>(null);
+const etiquetaInput = ref<HTMLSelectElement | null>(null);
 const fechaInput = ref<HTMLInputElement | null>(null);
 const obsInput = ref<HTMLInputElement | null>(null);
 
@@ -88,6 +89,9 @@ const focusVisible = (index: number, desktopArr: HTMLElement[], mobileArr: HTMLE
 const handleEnter = (index: number, section: string) => {
     switch (section) {
         case 'vale':
+            etiquetaInput.value?.focus();
+            break;
+        case 'etiqueta':
             fechaInput.value?.focus();
             break;
         case 'fecha':
@@ -334,7 +338,7 @@ const showConfirmModal = ref(false);
                 <div class="grid-cols-2">
                      <div class="form-group">
                         <label>Nro. Viaje (Manual)</label>
-                        <select v-model="formData.etiqueta_viaje" class="form-control">
+                        <select ref="etiquetaInput" v-model="formData.etiqueta_viaje" class="form-control" @keydown.enter.prevent="handleEnter(0, 'etiqueta')">
                             <option value="">-- Seleccione --</option>
                             <option v-for="opt in etiquetasViajeOptions" :key="opt.value" :value="opt.value">
                                 {{ opt.label }}
