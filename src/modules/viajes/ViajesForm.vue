@@ -68,7 +68,41 @@ const recibidoInputsMobile = ref<HTMLInputElement[]>([]);
 const estadoInputsMobile = ref<HTMLSelectElement[]>([]);
 const obsItemInputsMobile = ref<HTMLInputElement[]>([]);
 
-const saveBtn = ref<HTMLButtonElement | null>(null);
+const extraFirstInputRef = ref<any>(null);
+const extraMedidaRefs    = ref<any[]>([]);
+const extraCantidadRefs  = ref<HTMLInputElement[]>([]);
+const extraEstadoRefs    = ref<HTMLSelectElement[]>([]);
+const extraObsRefs       = ref<HTMLInputElement[]>([]);
+
+const handleExtraEnter = (index: number, field: string) => {
+    const last = index === extraItems.value.length - 1;
+    switch (field) {
+        case 'producto':
+            extraMedidaRefs.value[index]?.focus?.();
+            break;
+        case 'medida':
+            nextTick(() => extraCantidadRefs.value[index]?.focus());
+            break;
+        case 'cantidad':
+            extraEstadoRefs.value[index]?.focus();
+            break;
+        case 'estado':
+            extraObsRefs.value[index]?.focus();
+            break;
+        case 'obs':
+            if (!last) {
+                // Focus next row producto
+                nextTick(() => {
+                    // SearchableSelect exposes focus via focus() on the component
+                    const nextCards = document.querySelectorAll<HTMLInputElement>('.extra-item-card .searchable-input');
+                    nextCards[(index + 1)]?.focus();
+                });
+            }
+            // else stay (last obs -> user clicks Guardar)
+            break;
+    }
+};
+
 
 // Helper to focus visible element
 const focusVisible = (index: number, desktopArr: HTMLElement[], mobileArr: HTMLElement[]) => {
@@ -112,12 +146,17 @@ const handleEnter = (index: number, section: string) => {
         case 'obsItem':
             const nextIndex = index + 1;
             const hasNextDesktop = nextIndex < recibidoInputsDesktop.value.length;
-            const hasNextMobile = nextIndex < recibidoInputsMobile.value.length;
+            const hasNextMobile  = nextIndex < recibidoInputsMobile.value.length;
 
             if (hasNextDesktop || hasNextMobile) {
                 focusVisible(nextIndex, recibidoInputsDesktop.value, recibidoInputsMobile.value);
+            } else if (extraItems.value.length > 0) {
+                // Focus the first extra product SearchableSelect
+                nextTick(() => extraFirstInputRef.value?.focus?.());
             } else {
-                saveBtn.value?.focus();
+                // No extras yet — add one and focus it
+                addExtraItem();
+                nextTick(() => extraFirstInputRef.value?.focus?.());
             }
             break;
     }
@@ -545,62 +584,100 @@ const showConfirmModal = ref(false);
 
             <!-- Productos Extra (No solicitados en el Requerimiento) -->
             <div class="form-section extra-items-section">
-                <div class="section-header-flex">
+                <div class="section-icon-header">
+                    <div class="section-icon-wrap extra-section-icon">
+                        <Plus class="icon-md" />
+                    </div>
                     <div>
                         <h3>Productos Extra</h3>
-                        <p class="section-hint">Registra productos que llegaron pero NO estaban en el requerimiento original.</p>
+                        <p class="section-desc">Productos que llegaron pero <strong>NO</strong> estaban en el requerimiento original</p>
                     </div>
-                    <button type="button" class="btn-add-extra" @click="addExtraItem">
-                        <Plus class="icon-xs" /> Agregar Producto Extra
+                    <button type="button" class="btn-add-extra" @click="addExtraItem" style="margin-left:auto;">
+                        <Plus class="icon-xs" /> Agregar Producto
                     </button>
                 </div>
 
-                <div v-if="extraItems.length === 0" class="empty-extra-hint">
-                    <span>Sin productos extra en este viaje.</span>
+                <div v-if="extraItems.length === 0" class="empty-extra-state">
+                    <Package class="empty-extra-icon" />
+                    <p>Sin productos extra en este viaje.</p>
+                    <button type="button" class="btn-add-extra-sm" @click="addExtraItem">+ Agregar ahora</button>
                 </div>
 
                 <div v-else class="extra-items-list">
-                    <div v-for="(item, index) in extraItems" :key="index" class="extra-item-row">
-                        <div class="extra-item-fields">
+                    <div v-for="(item, index) in extraItems" :key="index" class="extra-item-card">
+                        <!-- Card header: badge + delete -->
+                        <div class="extra-card-header">
+                            <span class="extra-item-badge">Producto Extra #{{ index + 1 }}</span>
+                            <button type="button" class="btn-remove-extra" @click="removeExtraItem(index)" title="Eliminar">
+                                <Trash2 class="icon-sm" />
+                            </button>
+                        </div>
+                        <!-- Row 1: Producto + Medida -->
+                        <div class="extra-row extra-row-top">
                             <div class="form-group">
-                                <label>Producto *</label>
-                                <select v-model="item.id_producto" class="form-control">
-                                    <option value="">Seleccionar...</option>
-                                    <option v-for="p in allProductos" :key="p.id_producto" :value="p.id_producto">
-                                        {{ p.nombre }}
-                                    </option>
-                                </select>
+                                <label class="field-label">📦 Producto *</label>
+                                <SearchableSelect
+                                    :ref="(el) => { if (index === 0) extraFirstInputRef = el; extraMedidaRefs[index] = el; }"
+                                    v-model="item.id_producto"
+                                    :options="allProductos"
+                                    label-key="nombre"
+                                    value-key="id_producto"
+                                    placeholder="Buscar producto..."
+                                    @next="handleExtraEnter(index, 'producto')"
+                                />
                             </div>
                             <div class="form-group">
-                                <label>Medida *</label>
-                                <select v-model="item.id_medida" class="form-control">
-                                    <option value="">Seleccionar...</option>
-                                    <option v-for="m in allMedidas" :key="m.id_medida" :value="m.id_medida">
-                                        {{ m.descripcion }}
-                                    </option>
-                                </select>
+                                <label class="field-label">📐 Medida *</label>
+                                <SearchableSelect
+                                    :ref="(el) => { extraMedidaRefs[index] = el }"
+                                    v-model="item.id_medida"
+                                    :options="allMedidas"
+                                    label-key="descripcion"
+                                    value-key="id_medida"
+                                    placeholder="Unidad..."
+                                    @next="handleExtraEnter(index, 'medida')"
+                                />
                             </div>
-                            <div class="form-group form-group-sm">
-                                <label>Cantidad *</label>
-                                <input v-model.number="item.cantidad_recibida" type="number" min="1" class="form-control" />
+                        </div>
+                        <!-- Row 2: Cantidad + Estado + Observación -->
+                        <div class="extra-row extra-row-bottom">
+                            <div class="form-group">
+                                <label class="field-label">🔢 Cantidad *</label>
+                                <input
+                                    :ref="(el) => { if (el) extraCantidadRefs[index] = el as HTMLInputElement }"
+                                    v-model.number="item.cantidad_recibida"
+                                    type="number" min="1"
+                                    class="form-control form-control-enhanced"
+                                    placeholder="0"
+                                    @keydown.enter.prevent="handleExtraEnter(index, 'cantidad')"
+                                />
                             </div>
                             <div class="form-group">
-                                <label>Estado</label>
-                                <select v-model="item.estado_entrega" class="form-control">
+                                <label class="field-label">✅ Estado</label>
+                                <select
+                                    :ref="(el) => { if (el) extraEstadoRefs[index] = el as HTMLSelectElement }"
+                                    v-model="item.estado_entrega"
+                                    class="form-control form-control-enhanced"
+                                    @keydown.enter.prevent="handleExtraEnter(index, 'estado')"
+                                >
                                     <option value="OK">✓ Conforme (OK)</option>
                                     <option value="PARCIAL">⚠ Parcial</option>
                                     <option value="MUESTRA">📦 Muestra</option>
                                     <option value="RECHAZADO">✗ Rechazado</option>
                                 </select>
                             </div>
-                            <div class="form-group">
-                                <label>Observación</label>
-                                <input v-model="item.observacion" type="text" class="form-control" placeholder="Opcional..." />
+                            <div class="form-group" style="flex:2">
+                                <label class="field-label">💬 Observación</label>
+                                <input
+                                    :ref="(el) => { if (el) extraObsRefs[index] = el as HTMLInputElement }"
+                                    v-model="item.observacion"
+                                    type="text"
+                                    class="form-control form-control-enhanced"
+                                    placeholder="Opcional..."
+                                    @keydown.enter.prevent="handleExtraEnter(index, 'obs')"
+                                />
                             </div>
                         </div>
-                        <button type="button" class="btn-remove-extra" @click="removeExtraItem(index)" title="Eliminar">
-                            <Trash2 class="icon-xs" />
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1253,7 +1330,128 @@ const showConfirmModal = ref(false);
         grid-column: 1 / -1;
     }
 
+/* ── Productos Extra ─────────────────────── */
+.extra-items-section {
+    border: 2px dashed #fed7aa;
+    background: #fffbf5;
+}
+.extra-items-section:hover {
+    border-color: #f97316;
+    box-shadow: 0 4px 20px rgba(249, 115, 22, 0.1);
+}
+.extra-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+}
+.extra-item-card {
+    background: white;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid #f97316;
+    border-radius: 0.75rem;
+    padding: 1rem 1.25rem;
+    transition: box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.extra-item-card:hover {
+    box-shadow: 0 3px 16px rgba(249, 115, 22, 0.15);
+}
+.extra-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.extra-item-badge {
+    font-weight: 700;
+    font-size: 0.75rem;
+    color: #f57c00;
+    background: #fff3e0;
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+.extra-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+.extra-row .form-group {
+    flex: 1;
+}
+.extra-row-top .form-group:first-child { flex: 2; } /* Producto más ancho */
+.btn-remove-extra {
+
+    flex-shrink: 0;
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 1.5rem;
+}
+.btn-remove-extra:hover {
+    background: #fca5a5;
+    border-color: #ef4444;
+}
+.btn-add-extra {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 1.1rem;
+    background: linear-gradient(135deg, #f57c00, #ef6c00);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(245, 124, 0, 0.35);
+}
+.btn-add-extra:hover {
+    background: linear-gradient(135deg, #ef6c00, #e65100);
+    transform: translateY(-1px);
+}
+.empty-extra-state {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: #9ca3af;
+}
+.empty-extra-icon {
+    width: 3rem;
+    height: 3rem;
+    color: #f97316;
+    opacity: 0.4;
+    margin-bottom: 0.75rem;
+}
+.empty-extra-state p { margin: 0 0 1rem; font-size: 0.9rem; }
+.btn-add-extra-sm {
+    background: none;
+    border: 1.5px dashed #f97316;
+    color: #f97316;
+    border-radius: 6px;
+    padding: 0.4rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.btn-add-extra-sm:hover {
+    background: #fff7ed;
+}
+
     /* Table responsive behavior */
+
     .table-responsive {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
