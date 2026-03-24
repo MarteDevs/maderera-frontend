@@ -176,6 +176,10 @@ watch(activeTab, () => {
                         {{ new Date(value).toLocaleString() }}
                     </template>
                     
+                    <template #cell-codigo_viaje="{ value, row }">
+                        {{ value || (row as any).codigo_despacho || '-' }}
+                    </template>
+                    
                     <template #cell-tipo="{ value }">
                         <span 
                             class="badge"
