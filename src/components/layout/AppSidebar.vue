@@ -11,6 +11,7 @@ import {
     Settings,
     X,
     BarChart3,
+    Send
 } from 'lucide-vue-next';
 
 
@@ -31,6 +32,7 @@ const menuItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard },
     { label: 'Requerimientos', path: '/requirements', icon: FileText },
     { label: 'Viajes', path: '/viajes', icon: Truck },
+    { label: 'Despachos', path: '/despachos', icon: Send },
     { label: 'Inventario', path: '/inventory', icon: Package },
     { label: 'Maestros', path: '/maestros', icon: Database },
     { label: 'Reportes', path: '/reportes', icon: BarChart3 },

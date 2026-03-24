@@ -60,6 +60,24 @@ const routes = [
                 meta: { title: 'Registrar Viaje' }
             },
             {
+                path: 'despachos',
+                name: 'Despachos',
+                component: () => import('../modules/despachos/DespachosView.vue'),
+                meta: { title: 'Despachos' }
+            },
+            {
+                path: 'despachos/nuevo',
+                name: 'NuevoDespacho',
+                component: () => import('../modules/despachos/DespachosForm.vue'),
+                meta: { title: 'Registrar Despacho' }
+            },
+            {
+                path: 'despachos/:id/editar',
+                name: 'DetalleDespacho',
+                component: () => import('../modules/despachos/DespachosForm.vue'),
+                meta: { title: 'Editar Despacho' }
+            },
+            {
                 path: 'inventory',
                 name: 'Inventario',
                 component: () => import('../modules/inventario/InventarioView.vue'),
