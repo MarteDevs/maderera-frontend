@@ -11,7 +11,8 @@ import {
     Settings,
     X,
     BarChart3,
-    Send
+    Send,
+    Hexagon
 } from 'lucide-vue-next';
 
 
@@ -84,7 +85,12 @@ const handleLinkClick = () => {
         </button>
 
         <div class="sidebar-header">
-            <span class="logo">🌲 Madera ERP</span>
+            <div class="brand-logo">
+                <div class="logo-icon-wrap">
+                    <Hexagon class="brand-icon" />
+                </div>
+                <span class="logo-text">Inventra</span>
+            </div>
         </div>
         
         <nav class="sidebar-nav">
@@ -151,15 +157,33 @@ const handleLinkClick = () => {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.logo {
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: white;
+.brand-logo {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    letter-spacing: -0.02em;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.logo-icon-wrap {
+    background: linear-gradient(135deg, var(--primary) 0%, #ff6b6b 100%);
+    padding: 0.4rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.brand-icon {
+    color: white;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.logo-text {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.03em;
 }
 
 .sidebar-nav {

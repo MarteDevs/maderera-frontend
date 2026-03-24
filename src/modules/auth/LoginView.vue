@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth.store';
-import { LogIn } from 'lucide-vue-next';
+import { LogIn, Hexagon } from 'lucide-vue-next';
 
 const username = ref('');
 const password = ref('');
@@ -30,7 +30,12 @@ const handleLogin = async () => {
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <h1>Madera ERP</h1>
+                <div class="brand-logo-login">
+                    <div class="logo-icon-wrap-login">
+                        <Hexagon class="brand-icon" />
+                    </div>
+                    <h1>Inventra</h1>
+                </div>
                 <p>Ingreso al Sistema</p>
             </div>
             
@@ -96,11 +101,37 @@ const handleLogin = async () => {
     margin-bottom: 2rem;
 }
 
+.brand-logo-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.logo-icon-wrap-login {
+    background: linear-gradient(135deg, var(--primary) 0%, #ff6b6b 100%);
+    padding: 1rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.brand-icon {
+    color: white;
+    width: 2.5rem;
+    height: 2.5rem;
+    stroke-width: 2.5;
+}
+
 .login-header h1 {
-    color: var(--primary);
+    color: var(--text);
     margin: 0;
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
 .login-header p {
