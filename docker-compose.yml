@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------
+  # Frontend SPA (Vue 3 + Nginx)
+  # ----------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Aquí inyectamos la dirección pública de tu VPS 
+        # para que el frontend compilado sepa dónde está el backend.
+        - VITE_API_URL=http://5.189.171.171:3000/api
+    
+    container_name: madera_frontend_production
+    
+    # Exponemos el Frontend en el puerto 80 del VPS localmente.
+    ports:
+      - "80:80"
+    
+    restart: unless-stopped

@@ -9,9 +9,9 @@ RUN npm ci
 
 # Copiar el proyecto y compilar
 COPY . .
-# Se puede pasar la URL de la API mediante build-args si se requiere dinámico
-# ARG VITE_API_URL
-# ENV VITE_API_URL=$VITE_API_URL
+# Se puede pasar la URL de la API mediante build-args al compilar para producción
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # ─── Stage 2: Production Server ───────────────────────────────────────────────
