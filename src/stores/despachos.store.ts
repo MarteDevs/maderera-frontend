@@ -56,8 +56,12 @@ export const useDespachosStore = defineStore('despachos', () => {
             delete (apiFilters as any).anio;
 
             const response = await despachosService.getAll(apiFilters);
-            despachos.value = response.data;
-            pagination.value = response.pagination;
+            const responseData = response.status === 'success' && response.data ? response.data : response;
+            
+            despachos.value = responseData.data || [];
+            if (responseData.pagination) {
+                pagination.value = responseData.pagination;
+            }
         } catch (error: any) {
             console.error('Error al cargar despachos:', error);
             throw error;
@@ -69,7 +73,8 @@ export const useDespachosStore = defineStore('despachos', () => {
     async function fetchDespachoById(id: number) {
         loading.value = true;
         try {
-            currentDespacho.value = await despachosService.getById(id);
+            const response = await despachosService.getById(id);
+            currentDespacho.value = response.status === 'success' && response.data ? response.data : response;
             return currentDespacho.value;
         } catch (error: any) {
             console.error('Error al cargar despacho:', error);
@@ -177,7 +182,8 @@ export const useDespachosStore = defineStore('despachos', () => {
             delete (apiFilters as any).anio;
 
             const response = await despachosService.getAll(apiFilters);
-            return response.data;
+            const responseData = response.status === 'success' && response.data ? response.data : response;
+            return responseData.data || [];
         } catch (error: any) {
             console.error('Error al cargar datos para exportar:', error);
             throw error;
